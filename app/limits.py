@@ -1,23 +1,40 @@
-"""Enforced safety bounds: retries, tool calls, output size, request volume.
+"""Safety bounds.
 
-These are hard guards in code (they raise / truncate), independent of any
-provider billing alert. Billing alerts are notifications, not caps.
+Two different things, kept separate:
+
+* Provider generation limits — parameters we would pass to the model request
+  (e.g. max_output_tokens). These bound what the PROVIDER generates. They are
+  NOT used to chop our own already-verified answers.
+* Display-length limit — a character budget for showing long, untrusted free
+  text in a UI. It never touches a verified grounded answer (that would risk
+  removing a qualification).
+
+Enforced in code now: request volume per session, tool calls per turn.
+Planned (not yet enforced in code): retry limiting — see RETRY_ENFORCEMENT.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Retry limiting is declared but NOT yet enforced anywhere. Do not claim it is.
+RETRY_ENFORCEMENT = "planned"
+
 
 @dataclass(frozen=True)
 class Limits:
-    max_retries: int = 2
+    # enforced
     max_tool_calls_per_turn: int = 3
-    max_output_tokens: int = 512
     max_requests_per_session: int = 50
+    # provider generation parameter (passed to the model; not a truncator of our text)
+    max_output_tokens: int = 512
+    # display-only, character-based; never applied to verified answers
+    max_display_chars: int = 2000
+    # PLANNED — not enforced yet (see RETRY_ENFORCEMENT)
+    max_retries: int = 2
 
 
 class LimitExceeded(Exception):
-    """Raised when a hard limit is hit."""
+    """Raised when a hard, enforced limit is hit."""
 
 
 class SessionBudget:
@@ -48,9 +65,12 @@ class SessionBudget:
         return self._tool_calls_this_turn
 
 
-def cap_output(text: str, max_tokens: int) -> str:
-    """Approximate output cap by whitespace tokens. Deterministic."""
-    tokens = text.split()
-    if len(tokens) <= max_tokens:
+def clamp_display(text: str, max_chars: int) -> str:
+    """Display-only character clamp for long, UNTRUSTED free text.
+
+    Never call this on a verified grounded answer: clamping could drop a
+    qualification. For display of long free text only.
+    """
+    if len(text) <= max_chars:
         return text
-    return " ".join(tokens[:max_tokens]) + " … [truncated]"
+    return text[:max_chars].rstrip() + " … [display-truncated]"

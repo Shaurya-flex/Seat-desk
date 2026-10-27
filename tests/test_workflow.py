@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from app.workflow import build_default_assistant, Assistant
-from app.limits import Limits, SessionBudget, LimitExceeded, cap_output
+from app.limits import Limits, SessionBudget, LimitExceeded, clamp_display
 from app.model import LiveModelAdapter, MockModelAdapter
 from app.retrieval import load_pack, validate_citation
 from app.tools import AvailabilityTool
@@ -141,10 +141,10 @@ def test_tool_call_limit_unit():
         b.spend_tool_call()
 
 
-def test_output_cap():
-    capped = cap_output("word " * 100, 10)
-    assert capped.endswith("[truncated]")
-    assert len(capped.split()) <= 12
+def test_clamp_display_is_char_based():
+    capped = clamp_display("x" * 500, 100)
+    assert capped.endswith("[display-truncated]")
+    assert len(capped) <= 100 + len(" … [display-truncated]")
 
 
 # --- live adapter safety ---
