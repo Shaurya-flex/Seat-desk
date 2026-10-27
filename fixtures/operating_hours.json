@@ -1,0 +1,14 @@
+{
+  "synthetic": true,
+  "note": "Synthetic approved operating hours for demonstration only. NOT confirmed Rasra Library hours. Replace with confirmed hours before any real use.",
+  "timezone": "Asia/Kolkata",
+  "weekly": [
+    { "weekday": 0, "day": "Mon", "open": "06:00", "close": "22:00" },
+    { "weekday": 1, "day": "Tue", "open": "06:00", "close": "22:00" },
+    { "weekday": 2, "day": "Wed", "open": "06:00", "close": "22:00" },
+    { "weekday": 3, "day": "Thu", "open": "06:00", "close": "22:00" },
+    { "weekday": 4, "day": "Fri", "open": "06:00", "close": "22:00" },
+    { "weekday": 5, "day": "Sat", "open": "06:00", "close": "22:00" },
+    { "weekday": 6, "day": "Sun", "open": "08:00", "close": "20:00" }
+  ]
+}
