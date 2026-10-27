@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "business": "Synthetic Demo Library (NOT real Rasra data)",
+    "status": "synthetic_demo",
+    "synthetic": true,
+    "note": "Illustrative values for development, testing, and demo only. These are invented placeholders and are NOT real Rasra Library & Study Point policy. Replace with knowledge/policies.json once the operator confirms real values.",
+    "language_policy": "answer_en and answer_hi provided for each confirmed item."
+  },
+  "items": [
+    { "id": "hours.weekday",        "topic": "hours",      "status": "confirmed", "synthetic": true, "answer_en": "The library is open 6:00 AM to 10:00 PM on weekdays.", "answer_hi": "लाइब्रेरी सप्ताह के दिनों में सुबह 6:00 बजे से रात 10:00 बजे तक खुली रहती है।", "source": "Synthetic demo data", "last_verified": "2026-10-27" },
+    { "id": "fees.monthly",         "topic": "fees",       "status": "confirmed", "synthetic": true, "answer_en": "Monthly membership is a flat fee for one assigned seat and one time slot.", "answer_hi": "मासिक सदस्यता एक आवंटित सीट और एक समय स्लॉट के लिए एक निश्चित शुल्क है।", "source": "Synthetic demo data", "last_verified": "2026-10-27" },
+    { "id": "admission.documents",  "topic": "admission",  "status": "confirmed", "synthetic": true, "answer_en": "To join, bring one photo ID and one passport-size photo.", "answer_hi": "जुड़ने के लिए एक फोटो आईडी और एक पासपोर्ट साइज फोटो लाएं।", "source": "Synthetic demo data", "last_verified": "2026-10-27" },
+    { "id": "slots.schedule",       "topic": "slots",      "status": "confirmed", "synthetic": true, "answer_en": "Three slots: Morning 6 AM-12 PM, Afternoon 12-6 PM, Evening 6-10 PM.", "answer_hi": "तीन स्लॉट: सुबह 6-12, दोपहर 12-6, शाम 6-10।", "source": "Synthetic demo data", "last_verified": "2026-10-27" },
+    { "id": "seat.assignment",      "topic": "seats",      "status": "confirmed", "synthetic": true, "answer_en": "Seats are assigned per member per slot; you may ask about free seats for a time.", "answer_hi": "सीटें प्रति सदस्य प्रति स्लॉट आवंटित होती हैं।", "source": "Synthetic demo data", "last_verified": "2026-10-27" },
+    { "id": "membership.validity",  "topic": "membership", "status": "confirmed", "synthetic": true, "answer_en": "Membership is valid for the calendar month and renews on payment.", "answer_hi": "सदस्यता उस कैलेंडर महीने के लिए वैध है और भुगतान पर नवीकरण होती है।", "source": "Synthetic demo data", "last_verified": "2026-10-27" },
+    { "id": "contact.handoff",      "topic": "contact",    "status": "confirmed", "synthetic": true, "answer_en": "For anything I can't confirm, the library desk can help during opening hours.", "answer_hi": "जो मैं पुष्ट नहीं कर सकता, उसके लिए खुलने के समय लाइब्रेरी डेस्क मदद कर सकता है।", "source": "Synthetic demo data", "last_verified": "2026-10-27" }
+  ]
+}

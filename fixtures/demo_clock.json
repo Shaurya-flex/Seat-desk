@@ -1,0 +1,6 @@
+{
+  "as_of": "2026-10-27T10:00:00+05:30",
+  "timezone": "Asia/Kolkata",
+  "synthetic": true,
+  "note": "Explicit demonstration clock. All availability is computed relative to this instant, not the real system time. Change as_of to simulate different demo moments."
+}

@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "note": "Synthetic seat occupancy intervals for demonstration only. Half-open intervals [start, end) in Asia/Kolkata local time. Deliberately includes overlapping intervals on one seat (S01) to exercise overlap handling.",
+  "timezone": "Asia/Kolkata",
+  "occupancy": [
+    { "seat_id": "S01", "date": "2026-10-27", "start": "09:00", "end": "11:00", "member_id": "M001", "note": "synthetic" },
+    { "seat_id": "S01", "date": "2026-10-27", "start": "10:30", "end": "12:30", "member_id": "M001", "note": "synthetic overlapping record on same seat" },
+    { "seat_id": "S02", "date": "2026-10-27", "start": "12:00", "end": "14:00", "member_id": "M002", "note": "synthetic" },
+    { "seat_id": "S03", "date": "2026-10-27", "start": "18:00", "end": "20:00", "member_id": "M001", "note": "synthetic evening block" },
+    { "seat_id": "S04", "date": "2026-10-28", "start": "09:00", "end": "11:00", "member_id": "M003", "note": "synthetic next-day record" }
+  ]
+}

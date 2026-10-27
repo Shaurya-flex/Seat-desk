@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "note": "Synthetic seat inventory for demonstration only. Not real Rasra Library seating.",
+  "seats": [
+    { "seat_id": "S01", "label": "Seat 1", "zone": "Quiet Zone" },
+    { "seat_id": "S02", "label": "Seat 2", "zone": "Quiet Zone" },
+    { "seat_id": "S03", "label": "Seat 3", "zone": "Quiet Zone" },
+    { "seat_id": "S04", "label": "Seat 4", "zone": "General Zone" },
+    { "seat_id": "S05", "label": "Seat 5", "zone": "General Zone" },
+    { "seat_id": "S06", "label": "Seat 6", "zone": "General Zone" }
+  ]
+}

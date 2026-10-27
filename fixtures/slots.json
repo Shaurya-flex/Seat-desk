@@ -1,0 +1,10 @@
+{
+  "synthetic": true,
+  "note": "Synthetic time slots for demonstration only. Illustrative, not confirmed Rasra Library slot timings.",
+  "timezone": "Asia/Kolkata",
+  "slots": [
+    { "slot_id": "morning",   "label": "Morning",   "start": "06:00", "end": "12:00" },
+    { "slot_id": "afternoon", "label": "Afternoon", "start": "12:00", "end": "18:00" },
+    { "slot_id": "evening",   "label": "Evening",   "start": "18:00", "end": "22:00" }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "business": "Rasra Library & Study Point",
+    "status": "template",
+    "synthetic": false,
+    "note": "Approved policy pack. Every business fact starts as UNKNOWN and must be filled and confirmed by the operator before it can be served. DO NOT invent fees, timings, or admission requirements. An item with status 'unknown' must never be used to answer; the assistant hands off instead.",
+    "language_policy": "Provide answer_en and answer_hi for each confirmed item. If only one is confirmed, leave the other null."
+  },
+  "items": [
+    { "id": "hours.weekday",        "topic": "hours",      "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Opening and closing time on weekdays" },
+    { "id": "hours.weekend",        "topic": "hours",      "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Opening and closing time on weekends/holidays" },
+    { "id": "fees.monthly",         "topic": "fees",       "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Monthly membership fee amount and what it includes" },
+    { "id": "fees.deposit",         "topic": "fees",       "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Security deposit amount and refundability, if any" },
+    { "id": "fees.payment_methods", "topic": "fees",       "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Accepted payment methods" },
+    { "id": "admission.documents",  "topic": "admission",  "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Documents required to join" },
+    { "id": "admission.eligibility","topic": "admission",  "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Who may join (age / student status, if restricted)" },
+    { "id": "slots.schedule",       "topic": "slots",      "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Available time slots and their timings" },
+    { "id": "seat.assignment",      "topic": "seats",      "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Whether seats are assigned/fixed or open, and how reservation works" },
+    { "id": "membership.validity",  "topic": "membership", "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Membership validity period and renewal rule" },
+    { "id": "facilities.wifi",      "topic": "facilities", "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Whether Wi-Fi / other facilities are provided (do not share passwords via the assistant)" },
+    { "id": "rules.conduct",        "topic": "rules",      "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Code of conduct / library rules" },
+    { "id": "contact.handoff",      "topic": "contact",    "status": "unknown", "answer_en": null, "answer_hi": null, "source": null, "last_verified": null, "required": "Human contact (name / phone / hours) used for handoff messages" }
+  ]
+}
