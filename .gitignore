@@ -1,0 +1,30 @@
+# Secrets / environment
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+credentials.json
+service-account*.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local-only / sensitive data (keep real policy + member data out of git until reviewed)
+knowledge/policies.local.json
+fixtures/*.local.json
+*.local.json
+scratch/
