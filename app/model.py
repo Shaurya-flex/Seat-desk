@@ -30,7 +30,7 @@ _HANDOFF = [
 ]
 _AVAILABILITY = [
     "free seat", "seats free", "any seats", "seat free", "seats available",
-    "available", "vacant", "खाली", "कौन सी सीट", "सीटें खाली",
+    "availability", "available", "vacant", "खाली", "कौन सी सीट", "सीटें खाली",
 ]
 
 
