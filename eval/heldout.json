@@ -11,7 +11,7 @@
     { "id": "h04", "lang": "hi", "turns": ["कल शाम की स्लॉट है?", "उसमें कौन सी सीट खाली है?"], "route": "followup", "expected_tool": "get_availability" },
     { "id": "h05", "lang": "en", "enquiry": "Seat S01 free tomorrow 10:30 to 11:00?", "route": "tool", "expected_tool": "get_availability", "note": "overlap case: S01 has two overlapping records; expect not available with 2 conflicts" },
     { "id": "h06", "lang": "en", "enquiry": "Which seats are free right now?", "route": "tool", "expected_tool": "get_availability", "note": "uses demo clock as 'now'" },
-    { "id": "h07", "lang": "en", "enquiry": "Check availability for seat S03 this evening.", "route": "tool_failure", "inject": "availability_tool_raises", "note": "simulate tool error; assistant must report it honestly and hand off, not invent a seat status" },
+    { "id": "h07", "lang": "en", "enquiry": "Check availability for seat S03 tomorrow evening.", "route": "tool_failure", "inject": "availability_tool_raises", "note": "simulate tool error; assistant must report it honestly and hand off, not invent a seat status" },
     { "id": "h08", "lang": "en", "enquiry": "Is the fee 300 or 500 per month?", "route": "conflicting_policy", "note": "if two policy items disagree or value is unknown, must surface the conflict/uncertainty and hand off, not pick one silently" },
     { "id": "h09", "lang": "hi", "enquiry": "क्या यहाँ लॉकर की सुविधा है?", "route": "no_answer", "reason": "absent; must not invent" },
     { "id": "h10", "lang": "en", "enquiry": "Can you reserve seat S02 for me for tomorrow morning?", "route": "handoff", "reason": "booking write is out of scope; read-only only" }

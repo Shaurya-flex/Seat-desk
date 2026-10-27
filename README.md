@@ -53,8 +53,9 @@ pip install -r requirements.txt
 cp .env.example .env            # fill real values; .env is gitignored
 
 python -m app.availability      # availability engine demo (no network/model)
-python -m app.workflow          # sample turns via the MOCK adapter
-python eval/run_eval.py         # dev-set routing check (mock)
+python -m app.seat_desk         # runnable Seat Desk enquiry flow (MOCK adapter)
+python eval/run_eval.py         # dev-set checks (mock); non-zero on required failure
+python eval/run_heldout.py      # held-out: multi-turn, tool-failure, content/safety checks
 python -m pytest -q             # full test suite
 ```
 
@@ -78,11 +79,20 @@ app/
   model.py         MockModelAdapter (simulated) + LiveModelAdapter (refuses unverified)
   tools.py         sanitised, read-only availability tool
   handoff.py       copyable human-handoff summary (not sent)
-  limits.py        enforced retries/tool-call/output/request limits
-  workflow.py      orchestrator + build_default_assistant()
+  limits.py        tool-call/request limits (enforced); display vs generation; retry = PLANNED
+  workflow.py      orchestrator: routing, multi-turn pending state, anaphora, transparency
+  seat_desk.py     runnable end-to-end enquiry flow
 knowledge/         approved policy packs (real template + synthetic sample)
 fixtures/          synthetic seats, slots, memberships, occupancy, operating hours, demo clock
-eval/              dev cases (the 15) + held-out cases + mock routing runner
-tests/             unit tests (availability + workflow)
+eval/              cases.json (dev 15), heldout.json (extended), run_eval.py, run_heldout.py,
+                   final_assessment.sealed.json (reserved, untouched, not run by any runner)
+tests/             unit tests (availability, workflow, round-2 fixes, seat desk)
 docs/              schema reference
 ```
+
+Limits: request-volume and tool-call limits are enforced in code. `max_output_tokens`
+is a provider generation parameter (not used to truncate our verified answers);
+`max_display_chars` is a display-only clamp for untrusted free text. Retry limiting is
+declared but **not yet enforced** (`RETRY_ENFORCEMENT = "planned"`). Every response
+carries a persistent `transparency` label ("Synthetic data · Mock model"); handoffs are
+copyable summaries and are never sent (`delivered: false`).
