@@ -55,8 +55,8 @@ cp .env.example .env            # fill real values; .env is gitignored
 python -m app.availability      # availability engine demo (no network/model)
 python -m app.seat_desk         # runnable Seat Desk enquiry flow (MOCK adapter)
 python eval/run_eval.py         # dev-set checks (mock); non-zero on required failure
-python eval/run_heldout.py      # held-out: multi-turn, tool-failure, content/safety checks
-python -m pytest -q             # full test suite
+python eval/run_regression.py   # regression: multi-turn, tool-failure, consistency checks
+python -m pytest -q             # full test suite (CI runs this offline, no secrets)
 ```
 
 Set `KNOWLEDGE_PACK=knowledge/policies.sample.json` to develop against synthetic
@@ -79,16 +79,22 @@ app/
   model.py         MockModelAdapter (simulated) + LiveModelAdapter (refuses unverified)
   tools.py         sanitised, read-only availability tool
   handoff.py       copyable human-handoff summary (not sent)
-  limits.py        tool-call/request limits (enforced); display vs generation; retry = PLANNED
-  workflow.py      orchestrator: routing, multi-turn pending state, anaphora, transparency
+  limits.py        tool-call/request limits + run_guarded (retry + per-call timeout, enforced)
+  verify.py        evaluator: response/structured consistency, privacy + booking guards
+  workflow.py      routing, multi-turn state, anaphora, corrections, follow-ups, transparency
   seat_desk.py     runnable end-to-end enquiry flow
 knowledge/         approved policy packs (real template + synthetic sample)
 fixtures/          synthetic seats, slots, memberships, occupancy, operating hours, demo clock
-eval/              cases.json (dev 15), heldout.json (extended), run_eval.py, run_heldout.py,
-                   final_assessment.sealed.json (reserved, untouched, not run by any runner)
-tests/             unit tests (availability, workflow, round-2 fixes, seat desk)
-docs/              schema reference
+eval/              cases.json (dev), regression.json (tuned → regression), run_eval.py,
+                   run_regression.py, final_assessment.sealed.json (blind, untouched, not run)
+tests/             unit tests (availability, workflow, round-2/3 fixes, mutation, seat desk)
+docs/              SCHEMA.md, RULES.md (rules sources + classification), LIMITATIONS.md
+.github/workflows/ ci.yml (offline tests + eval; no secrets, no paid calls)
 ```
+
+See `docs/RULES.md` for rules sources (confirmed / interpretation / unresolved) and
+`docs/LIMITATIONS.md` for what is proven vs not. The live Meta adapter stays disabled
+until a verified endpoint and account access exist; mock tests prove wiring only.
 
 Limits: request-volume and tool-call limits are enforced in code. `max_output_tokens`
 is a provider generation parameter (not used to truncate our verified answers);
