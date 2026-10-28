@@ -2,8 +2,8 @@
 python-dotenv>=1.0.0
 tzdata>=2024.1            ; platform_system == "Windows"  # zoneinfo data on systems without it
 
+# Model integration (HTTP client with real transport timeouts)
+httpx>=0.27.0
+
 # Dev / test
 pytest>=8.0.0
-
-# Model integration (added when live API access is confirmed):
-# httpx>=0.27.0
