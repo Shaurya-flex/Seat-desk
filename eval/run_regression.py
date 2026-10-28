@@ -1,13 +1,13 @@
-"""Extended held-out eval: multi-turn, tool-failure, and content/safety checks.
+"""Regression eval: multi-turn, tool-failure, content/safety + consistency checks.
 
 SIMULATED (mock model, synthetic data). Exits non-zero if any REQUIRED check
-fails. Required = safety invariants on every case + route expectations for the
-categories we claim to handle. Known-gap categories (overlap nuance,
-conflicting-policy detection) are reported as INFO, not required.
+fails. Required = safety invariants + evaluator consistency on every case, plus
+route expectations for handled categories. Known-gap categories (conflicting
+policy) are reported as INFO.
 
-This runs eval/heldout.json. It never touches eval/final_assessment.sealed.json.
+Runs eval/regression.json. Never touches eval/final_assessment.sealed.json.
 
-Usage: python eval/run_heldout.py   ; echo $?
+Usage: python eval/run_regression.py   ; echo $?
 """
 from __future__ import annotations
 
@@ -18,12 +18,11 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
-from app.workflow import build_default_assistant  # noqa: E402
+from app.workflow import build_default_assistant   # noqa: E402
+from app.verify import verify_consistency          # noqa: E402
 
 SAMPLE = BASE / "knowledge" / "policies.sample.json"
-_BOOKING = ["booked", "reserved for you", "reservation confirmed"]
 
-# category/route -> required expected workflow route
 REQUIRED_ROUTE = {
     "grounded": "policy", "tool": "availability", "followup": "availability",
     "handoff": "handoff", "no_answer": "no_answer", "tool_failure": "handoff",
@@ -42,29 +41,25 @@ def run_case(case) -> dict:
 
 def checks_for(case, r) -> list[tuple[str, bool, bool]]:
     checks: list[tuple[str, bool, bool]] = []
-    blob = json.dumps(r.get("availability") or {})
-    # safety invariants (required, every case)
-    if r.get("availability") is not None:
-        checks.append(("sanitised_no_member", "member_id" not in blob and "note" not in blob, True))
+    # evaluator consistency (required, every case)
+    vc = verify_consistency(r)
+    checks.append((f"consistency{'' if vc['ok'] else ':' + ','.join(vc['issues'])}", vc["ok"], True))
     if r.get("handoff") is not None:
         checks.append(("handoff_not_sent", r["handoff"]["delivered"] is False, True))
-    ans = (r.get("answer") or "").lower()
-    checks.append(("no_booking_claim", not any(b in ans for b in _BOOKING), True))
 
-    # route expectation (required for handled categories, else informational)
     route = case.get("route")
     if route in REQUIRED_ROUTE:
         checks.append((f"route={REQUIRED_ROUTE[route]}", r["route"] == REQUIRED_ROUTE[route], True))
     else:
-        checks.append((f"route?({route})", True, False))  # info only
+        checks.append((f"route?({route})", True, False))   # info only
     if route == "tool_failure":
         checks.append(("tool_failure_flagged", any("tool_failure" in w for w in r.get("warnings", [])), True))
     return checks
 
 
 def main() -> int:
-    data = json.loads((BASE / "eval" / "heldout.json").read_text(encoding="utf-8"))
-    print("HELD-OUT eval — SIMULATED (mock model, synthetic data)\n")
+    data = json.loads((BASE / "eval" / "regression.json").read_text(encoding="utf-8"))
+    print("REGRESSION eval — SIMULATED (mock model, synthetic data)\n")
     failed = 0
     for c in data["cases"]:
         r = run_case(c)

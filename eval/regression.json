@@ -1,7 +1,7 @@
 {
   "meta": {
-    "set": "heldout",
-    "purpose": "Held-out evaluation cases. Do NOT look at these while tuning prompts or the knowledge base. Run only to measure, and report actual results. We never claim a guaranteed absence of hallucination — only measured pass rates on this set.",
+    "set": "regression",
+    "purpose": "Regression cases. These were tuned against during development, so they are NO LONGER a blind held-out set — they guard against regressions. The only blind set is final_assessment.sealed.json, which stays untouched. Run on every change; report actual results. Never claim guaranteed absence of hallucination.",
     "categories": ["hinglish", "followup", "overlap", "tool_failure", "conflicting_policy", "no_answer", "grounded"]
   },
   "cases": [

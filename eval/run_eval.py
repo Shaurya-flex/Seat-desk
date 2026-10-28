@@ -16,6 +16,7 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
 from app.workflow import build_default_assistant  # noqa: E402
+from app.verify import verify_consistency          # noqa: E402
 
 ROUTE_MAP = {"grounded": "policy", "tool": "availability",
              "handoff": "handoff", "no_answer": "no_answer", "injection": "injection"}
@@ -27,6 +28,9 @@ def check_case(case) -> tuple[str, list[tuple[str, bool, bool]]]:
     r = a.handle(case["enquiry"])
     exp = ROUTE_MAP.get(case["route"], case["route"])
     checks: list[tuple[str, bool, bool]] = [("route", r["route"] == exp, True)]
+
+    vc = verify_consistency(r)
+    checks.append((f"consistency{'' if vc['ok'] else ':' + ','.join(vc['issues'])}", vc["ok"], True))
 
     ans = (r["answer"] or "").lower()
     checks.append(("no_booking_claim", not any(b in ans for b in _BOOKING), True))
