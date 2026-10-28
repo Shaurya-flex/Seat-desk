@@ -73,6 +73,47 @@ def _has_anaphor(enquiry: str) -> bool:
     return any(a in enquiry for a in ("उसमें", "इसमें", "उसी"))
 
 
+_CONT_CUES_EN = ("and ", "also", "what about", "how about", "instead", "actually",
+                 "rather", "change", "no,", "no ")
+_CONT_CUES_HI = ("और", "भी", "बल्कि", "नहीं", "बदल")
+
+
+def _is_continuation(enquiry: str) -> bool:
+    """A short follow-up/correction on a previous turn (e.g. 'and S02?', 'actually morning')."""
+    low = enquiry.lower()
+    return any(c in low for c in _CONT_CUES_EN) or any(c in enquiry for c in _CONT_CUES_HI)
+
+
+def _alternatives(enquiry: str) -> dict:
+    """Detect when the user offered MORE THAN ONE time/date option."""
+    low = enquiry.lower()
+    slots = [k for k, hi in _SLOT_WORDS.items() if k in low or hi in enquiry]
+    dates: list[str] = []
+    if "today" in low or "आज" in enquiry:
+        dates.append("today")
+    if "tomorrow" in low or "कल" in enquiry:
+        dates.append("tomorrow")
+    dates += _ISO_DATE_RE.findall(enquiry)
+    ranges = _TIME_RANGE_RE.findall(enquiry)
+    return {"slots": slots, "dates": list(dict.fromkeys(dates)), "ranges": ranges}
+
+
+def _merge_availability(base: dict, new: dict) -> dict:
+    """Merge a follow-up onto a prior query. A new interval TYPE replaces the old
+    one (slot replaces explicit times and vice versa); date/seat override."""
+    merged = dict(base)
+    if "slot" in new:
+        merged.pop("start", None); merged.pop("end", None)
+        merged["slot"] = new["slot"]
+    if "start" in new and "end" in new:
+        merged.pop("slot", None)
+        merged["start"], merged["end"] = new["start"], new["end"]
+    for k in ("date", "seat_id"):
+        if k in new:
+            merged[k] = new[k]
+    return merged
+
+
 def _t(lang: str, en: str, hi: str) -> str:
     return hi if lang == "hi" else en
 
@@ -87,6 +128,7 @@ class Assistant:
         self.budget = SessionBudget(self.limits)
         self.pending: dict | None = None     # explicit pending-request state
         self.ctx: dict = {"date": None, "slot": None}   # last-mentioned date/slot (for anaphora)
+        self.last_availability: dict | None = None      # last completed availability query (follow-ups)
 
     # -- transparency (persistent demo label) -----------------------------
     def _transparency(self) -> dict:
@@ -103,7 +145,7 @@ class Assistant:
             "transparency": self._transparency(),
             "answer": None, "citations": [], "citation_check": None,
             "availability": None, "handoff": None, "clarification": None,
-            "warnings": [],
+            "facts": None, "warnings": [],
         }
 
     # -- main entry -------------------------------------------------------
@@ -122,14 +164,23 @@ class Assistant:
             new_ref = _resolve_timeref(enquiry, self.tool.clock)
             probe = self.model.classify(enquiry)
             fresh_intent = probe.intent in ("injection", "handoff") or probe.intent == "policy"
-            supplies = any(k in new_ref for k in ("date", "slot", "start", "seat_id"))
+            supplies = any(k in new_ref for k in ("date", "slot", "start", "end", "seat_id"))
             if supplies and not fresh_intent:
-                merged = dict(self.pending["fields"])
-                merged.update(new_ref)                 # new values override (corrections)
+                merged = _merge_availability(self.pending["fields"], new_ref)
                 self.pending = None
                 return self._availability_with_ref(enquiry, probe.lang, merged,
                                                     self._base("availability", probe.lang))
             self.pending = None                        # abandon obsolete pending
+
+        # Completed-turn follow-up or correction ("and seat S02?", "actually morning").
+        if self.last_availability and _is_continuation(enquiry):
+            new_ref = _resolve_timeref(enquiry, self.tool.clock)
+            if any(k in new_ref for k in ("date", "slot", "start", "end", "seat_id")):
+                probe = self.model.classify(enquiry)
+                if probe.intent != "injection":
+                    merged = _merge_availability(self.last_availability, new_ref)
+                    return self._availability_with_ref(enquiry, probe.lang, merged,
+                                                        self._base("availability", probe.lang))
 
         cls = self.model.classify(enquiry)
         lang = cls.lang
@@ -203,6 +254,21 @@ class Assistant:
         return self._no_answer(enquiry, lang)
 
     def _availability_with_ref(self, enquiry: str, lang: str, ref: dict, resp: dict) -> dict:
+        # --- multiple alternatives offered -> clarify, never silently pick one ---
+        alts = _alternatives(enquiry)
+        if len(alts["slots"]) > 1 or len(alts["dates"]) > 1 or len(alts["ranges"]) > 1:
+            self.pending = {"intent": "availability", "fields": {}}
+            if len(alts["dates"]) <= 1 and "date" in ref:
+                self.pending["fields"]["date"] = ref["date"]
+            if "seat_id" in ref:
+                self.pending["fields"]["seat_id"] = ref["seat_id"]
+            opts = " / ".join(alts["slots"]) if len(alts["slots"]) > 1 else " / ".join(map(str, alts["dates"]))
+            resp["route"] = "clarify"
+            resp["clarification"] = _t(lang,
+                f"You gave more than one option ({opts}). Which should I check?",
+                f"आपने एक से ज़्यादा विकल्प दिए ({opts})। मैं कौन सा देखूँ?")
+            return resp
+
         # --- anaphora: 'in it' / 'उसमें' reuses the last-mentioned date/slot ---
         if _has_anaphor(enquiry):
             if self.ctx.get("date") and "date" not in ref:
@@ -246,6 +312,8 @@ class Assistant:
         if "seat_id" in ref:
             request["seat_id"] = ref["seat_id"]
 
+        self.last_availability = dict(request)   # remember for follow-ups/corrections
+
         try:
             self.budget.spend_tool_call()
             result = self.tool.get_availability(request)        # sanitised view
@@ -268,6 +336,9 @@ class Assistant:
             resp["answer"] = _t(lang,
                 f"{n} of {total} seats are free for {result['query']['date']}" + (f" ({labels})." if free else "."),
                 f"{result['query']['date']} के लिए {total} में से {n} सीटें खाली हैं" + (f" ({labels})।" if free else "।"))
+            resp["facts"] = {"free": n, "considered": total, "date": result["query"]["date"],
+                             "window": result["query"].get("slot")
+                             or (result["query"].get("start"), result["query"].get("end"))}
         elif status == "closed":
             oh = result.get("operating_hours") or {}
             resp["answer"] = _t(lang,

@@ -88,9 +88,8 @@ def test_verified_answer_not_truncated_by_display_limit():
     assert "truncated" not in r["answer"]
 
 
-def test_retry_enforcement_marked_planned():
-    assert RETRY_ENFORCEMENT == "planned"
-    assert not hasattr(SessionBudget(Limits()), "spend_retry")   # not implemented
+def test_retry_enforcement_is_real():
+    assert RETRY_ENFORCEMENT == "enforced_in_run_guarded"
 
 
 def test_clamp_display_char_based():

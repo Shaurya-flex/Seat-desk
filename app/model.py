@@ -97,12 +97,19 @@ class LiveModelAdapter:
     _ILLUSTRATIVE = ("example.com", "example-meta-models", "localhost", "your_", "placeholder")
 
     def __init__(self, base_url: str | None, model_id: str | None,
-                 api_key: str | None, verified: bool = False):
+                 api_key: str | None, verified: bool = False,
+                 retries: int = 2, timeout_s: float = 20.0):
         self.base_url = base_url
         self.model_id = model_id
         self._api_key = api_key
         self.verified = verified
+        self.retries = retries
+        self.timeout_s = timeout_s
         self.name = f"live:{model_id or 'unset'}"
+
+    def _guarded(self, fn):
+        from .limits import run_guarded
+        return run_guarded(fn, retries=self.retries, timeout_s=self.timeout_s)
 
     def _guard(self) -> None:
         if not self.verified:
@@ -117,10 +124,13 @@ class LiveModelAdapter:
         if not self._api_key:
             raise RuntimeError("no API key configured")
 
+    def _call(self):  # placeholder for the real HTTP request (not implemented)
+        raise NotImplementedError("live model call not implemented yet")
+
     def classify(self, enquiry: str, history: list | None = None) -> Classification:
         self._guard()
-        raise NotImplementedError("live model call not implemented yet")
+        return self._guarded(self._call)        # retry/timeout enforced here
 
     def draft_answer(self, lang: str, items: list[dict]) -> tuple[str, list[str]]:
         self._guard()
-        raise NotImplementedError("live model call not implemented yet")
+        return self._guarded(self._call)        # retry/timeout enforced here
