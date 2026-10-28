@@ -92,9 +92,16 @@ docs/              SCHEMA.md, RULES.md (rules sources + classification), LIMITAT
 .github/workflows/ ci.yml (offline tests + eval; no secrets, no paid calls)
 ```
 
-See `docs/RULES.md` for rules sources (confirmed / interpretation / unresolved) and
-`docs/LIMITATIONS.md` for what is proven vs not. The live Meta adapter stays disabled
-until a verified endpoint and account access exist; mock tests prove wiring only.
+See `docs/RULES.md` (rules sources), `docs/ELIGIBILITY.md` (model availability vs competition
+vs grant eligibility), and `docs/LIMITATIONS.md` (proven vs not). The real `LiveModelAdapter`
+is implemented with **mocked-HTTP contract tests** (transport timeout, classified retries,
+structured-extraction + read-only tool-call validation, no silent fallback) but stays
+**disabled** until a verified endpoint + account access exist — no live call has been made.
+`app/intake.py` holds clearly-labelled **mock** audio/transcript/staff-recheck scaffolding,
+not wired into the finished text flow. Mock tests prove wiring only, not Meta integration.
+
+> Project description for publishing: use **"Meta integration in progress"** until a genuine
+> live round trip exists — do not describe mock behaviour as live/Meta-powered.
 
 Limits: request-volume and tool-call limits are enforced in code. `max_output_tokens`
 is a provider generation parameter (not used to truncate our verified answers);
