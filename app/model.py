@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import json
 import re
+import urllib.parse
 from dataclasses import dataclass
+from datetime import date
 
 DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 
@@ -101,6 +103,51 @@ class ToolNotAllowed(ValueError):
     """The provider proposed a tool call not on the read-only allowlist."""
 
 
+ALLOWED_SLOTS = ("morning", "afternoon", "evening")
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+_SEAT_RE = re.compile(r"^S\d{1,3}$")
+
+
+@dataclass
+class ExtractedFields:
+    """Typed, validated extraction from the model. Operational facts are NOT here —
+    only the structured query inputs the deterministic tool/policy path consumes."""
+    lang: str
+    intent: str
+    date: str | None = None
+    start: str | None = None
+    end: str | None = None
+    slot: str | None = None
+    seat_id: str | None = None
+
+
+def validate_fields(f: "ExtractedFields") -> "ExtractedFields":
+    """Reject malformed fields (types, allowed values, date, interval, seat) — never
+    accept-and-pass. Returns the same object when valid."""
+    if f.lang not in ("hi", "en"):
+        raise ExtractionError(f"invalid lang: {f.lang!r}")
+    if f.intent not in ALLOWED_INTENTS:
+        raise ExtractionError(f"invalid intent: {f.intent!r}")
+    if f.date is not None:
+        if not isinstance(f.date, str) or not _DATE_RE.match(f.date):
+            raise ExtractionError(f"bad date format: {f.date!r}")
+        try:
+            date.fromisoformat(f.date)
+        except ValueError:
+            raise ExtractionError(f"invalid date: {f.date!r}")
+    for t in (f.start, f.end):
+        if t is not None and (not isinstance(t, str) or not _TIME_RE.match(t)):
+            raise ExtractionError(f"bad time format: {t!r}")
+    if f.start and f.end and f.start >= f.end:
+        raise ExtractionError(f"start >= end: {f.start} {f.end}")
+    if f.slot is not None and f.slot not in ALLOWED_SLOTS:
+        raise ExtractionError(f"invalid slot: {f.slot!r}")
+    if f.seat_id is not None and (not isinstance(f.seat_id, str) or not _SEAT_RE.match(f.seat_id)):
+        raise ExtractionError(f"invalid seat_id: {f.seat_id!r}")
+    return f
+
+
 class LiveModelAdapter:
     """Real provider adapter (chat-completions style).
 
@@ -114,6 +161,7 @@ class LiveModelAdapter:
 
     simulated = False
     _ILLUSTRATIVE = ("example.com", "example-meta-models", "localhost", "your_", "placeholder")
+    ALLOWED_HOSTS = ("api.meta.ai",)   # https + allowlisted host required; verified alone is insufficient
     _SYS = ('You are a library front-desk intent extractor. Return ONLY JSON: '
             '{"lang":"hi|en","intent":"policy|availability|handoff|no_answer|injection|clarify",'
             '"fields":{}}. Never invent facts; facts are looked up separately.')
@@ -121,7 +169,7 @@ class LiveModelAdapter:
     def __init__(self, base_url: str | None, model_id: str | None,
                  api_key: str | None, verified: bool = False,
                  retries: int = 2, timeout_s: float = 20.0, deadline_s: float = 45.0,
-                 http_client=None):
+                 max_output_tokens: int = 512, http_client=None):
         self.base_url = base_url
         self.model_id = model_id
         self._api_key = api_key
@@ -129,6 +177,7 @@ class LiveModelAdapter:
         self.retries = retries
         self.timeout_s = timeout_s
         self.deadline_s = deadline_s
+        self.max_output_tokens = max_output_tokens
         self._client = http_client          # injectable httpx-like client for contract tests
         self.name = f"live:{model_id or 'unset'}"
 
@@ -138,7 +187,12 @@ class LiveModelAdapter:
                 "LiveModelAdapter is not enabled: endpoint/model not verified against "
                 "official docs. Set the real base URL + model id and verified=True first."
             )
-        if not self.base_url or any(m in (self.base_url or "") for m in self._ILLUSTRATIVE):
+        u = urllib.parse.urlparse(self.base_url or "")
+        if u.scheme != "https":
+            raise RuntimeError(f"endpoint must be HTTPS: {self.base_url!r}")
+        if u.hostname not in self.ALLOWED_HOSTS:
+            raise RuntimeError(f"host not allowlisted: {u.hostname!r}")
+        if any(m in (self.base_url or "") for m in self._ILLUSTRATIVE):
             raise RuntimeError(f"refusing to call an illustrative/unverified endpoint: {self.base_url!r}")
         if not self._api_key:
             raise RuntimeError("no API key configured")
@@ -169,6 +223,7 @@ class LiveModelAdapter:
 
     def _classify_payload(self, enquiry: str) -> dict:
         return {"model": self.model_id, "temperature": 0,
+                "max_tokens": self.max_output_tokens,     # explicit output bound
                 "messages": [{"role": "system", "content": self._SYS},
                              {"role": "user", "content": enquiry}]}
 
@@ -202,6 +257,37 @@ class LiveModelAdapter:
         hint = fields.get("topic") if isinstance(fields, dict) else None
         return Classification(lang, intent, topic_hint=hint)
 
+    def extract(self, enquiry: str, history: list | None = None) -> "ExtractedFields":
+        """Live extraction into a typed, validated ExtractedFields object."""
+        self._guard()
+        from .limits import run_guarded
+        data = run_guarded(
+            lambda: self._post("/chat/completions", self._classify_payload(enquiry)),
+            retries=self.retries, timeout_s=self.timeout_s, deadline_s=self.deadline_s,
+            is_retryable=self._is_retryable,
+        )
+        return self.parse_extraction(data)
+
+    @classmethod
+    def parse_extraction(cls, data: dict) -> "ExtractedFields":
+        try:
+            content = data["choices"][0]["message"]["content"]
+            obj = json.loads(content)
+        except (KeyError, IndexError, TypeError, ValueError) as e:
+            raise ExtractionError(f"unparseable response: {e}")
+        if not isinstance(obj, dict):
+            raise ExtractionError("response JSON is not an object")
+        for tc in obj.get("tool_calls") or []:
+            cls.validate_tool_call(tc)
+        fld = obj.get("fields") or {}
+        if not isinstance(fld, dict):
+            raise ExtractionError("fields must be an object")
+        return validate_fields(ExtractedFields(
+            lang=obj.get("lang"), intent=obj.get("intent"),
+            date=fld.get("date"), start=fld.get("start"), end=fld.get("end"),
+            slot=fld.get("slot"), seat_id=fld.get("seat_id"),
+        ))
+
     @staticmethod
     def validate_tool_call(tc: dict) -> bool:
         name = tc.get("name") if isinstance(tc, dict) else None
@@ -213,3 +299,17 @@ class LiveModelAdapter:
         # Operational facts are rendered deterministically in code, never by the
         # model. The live adapter is used for extraction/routing only.
         raise NotImplementedError("facts are code-rendered; live model is extraction-only")
+
+
+def make_model(mode: str, **kw):
+    """Fail-closed model factory. mode must be 'mock' or 'live'; an unknown mode
+    raises. 'live' requires base_url, model_id and api_key — never silently
+    downgrades to the mock."""
+    if mode == "mock":
+        return MockModelAdapter()
+    if mode == "live":
+        missing = [k for k in ("base_url", "model_id", "api_key") if not kw.get(k)]
+        if missing:
+            raise ValueError(f"live mode missing required config: {missing}")
+        return LiveModelAdapter(**kw)
+    raise ValueError(f"unknown model mode: {mode!r} (expected 'mock' or 'live')")

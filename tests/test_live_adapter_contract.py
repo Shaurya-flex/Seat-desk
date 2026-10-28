@@ -11,7 +11,8 @@ import json
 import httpx
 import pytest
 
-from app.model import LiveModelAdapter, ExtractionError, ToolNotAllowed, Classification
+from app.model import (LiveModelAdapter, ExtractionError, ToolNotAllowed, Classification,
+                       ExtractedFields, make_model, MockModelAdapter, validate_fields)
 
 BASE = "https://api.meta.ai/v1"
 MODEL = "muse-spark-1.3"
@@ -38,6 +39,7 @@ class FakeClient:
 
     def post(self, url, json=None, headers=None):
         self.calls += 1
+        self.last_url, self.last_json, self.last_headers = url, json, headers
         out = self.outcomes.pop(0)
         if isinstance(out, Exception):
             raise out
@@ -151,3 +153,67 @@ def test_missing_key_refused():
     a = LiveModelAdapter(BASE, MODEL, None, verified=True, http_client=FakeClient([_ok()]))
     with pytest.raises(RuntimeError):
         a.classify("x")
+
+
+# --- host allowlist + HTTPS (verified alone is insufficient) ---
+def test_http_endpoint_refused():
+    a = LiveModelAdapter("http://api.meta.ai/v1", MODEL, "k", verified=True, http_client=FakeClient([_ok()]))
+    with pytest.raises(RuntimeError):
+        a.classify("x")
+
+
+def test_non_allowlisted_https_host_refused():
+    a = LiveModelAdapter("https://evil.example.org/v1", MODEL, "k", verified=True, http_client=FakeClient([_ok()]))
+    with pytest.raises(RuntimeError):
+        a.classify("x")
+
+
+# --- explicit output-token bound in the request ---
+def test_payload_carries_output_token_limit():
+    client = FakeClient([_ok()])
+    a = LiveModelAdapter(BASE, MODEL, "k", verified=True, http_client=client, max_output_tokens=256)
+    a.classify("x")
+    assert client.last_json["max_tokens"] == 256
+
+
+# --- typed extraction (parse_extraction) + validation ---
+def test_parse_extraction_valid_fields():
+    content = json.dumps({"lang": "hi", "intent": "availability",
+                          "fields": {"date": "2026-10-28", "slot": "evening", "seat_id": "S01"}})
+    f = LiveModelAdapter.parse_extraction({"choices": [{"message": {"content": content}}]})
+    assert isinstance(f, ExtractedFields)
+    assert f.date == "2026-10-28" and f.slot == "evening" and f.seat_id == "S01"
+
+
+@pytest.mark.parametrize("fields", [
+    {"date": "28-10-2026"},            # bad date format
+    {"date": "2026-13-40"},            # impossible date
+    {"start": "25:00", "end": "26:00"},# bad times
+    {"start": "15:00", "end": "14:00"},# start >= end
+    {"slot": "midnight"},              # bad slot
+    {"seat_id": "XYZ"},                # bad seat
+])
+def test_parse_extraction_rejects_malformed(fields):
+    content = json.dumps({"lang": "en", "intent": "availability", "fields": fields})
+    with pytest.raises(ExtractionError):
+        LiveModelAdapter.parse_extraction({"choices": [{"message": {"content": content}}]})
+
+
+def test_validate_fields_rejects_non_string_date():
+    with pytest.raises(ExtractionError):
+        validate_fields(ExtractedFields(lang="en", intent="availability", date=20261028))
+
+
+# --- fail-closed model factory (no silent fallback) ---
+def test_make_model_mock():
+    assert isinstance(make_model("mock"), MockModelAdapter)
+
+
+def test_make_model_live_requires_config():
+    with pytest.raises(ValueError):
+        make_model("live", base_url=BASE)            # missing model_id/api_key
+
+
+def test_make_model_unknown_mode_raises():
+    with pytest.raises(ValueError):
+        make_model("auto")
