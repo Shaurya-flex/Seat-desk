@@ -37,6 +37,10 @@ class AvailabilityTool:
     def clock(self) -> DemoClock:
         return self._clock
 
+    @property
+    def slots(self) -> dict:
+        return self._slots
+
     def get_availability(self, request: dict) -> dict:
         """Return the SANITISED availability view. Read-only."""
         if self.fail:
