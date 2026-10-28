@@ -16,7 +16,7 @@ grant.
 | --- | --- |
 | Muse Spark Open is a Meta **open-weights** model, served on your own hardware or via partner inference (Baseten id `meta-models/muse-spark-open-1026`, Modal). | confirmed (Guide) |
 | Hosted Meta Model API offers `muse-spark-1.3`, `muse-voice-transcribe-1.0` (base `https://api.meta.ai/v1`). | interpretation — user-reported from docs; re-verify in console |
-| OpenRouter also offers Muse Spark Open (i.e. **not** Llama-only). | user-reported, **unverified** from here — confirm on OpenRouter's model list |
+| Muse Spark Open is a real Meta **open-weight** model (access: Meta, Hugging Face; Muse Model License) and is also in the OpenRouter catalogue — **not** Llama-only. | confirmed (Meta Model API console → Models, 2026-10-28; OpenRouter catalogue) |
 | The partner open-weights id must **not** be used as a hosted Meta Model API model id. | confirmed (Guide — Baseten note) |
 
 ## B. General competition eligibility (entering and being judged)
@@ -38,8 +38,16 @@ grant.
 | "Best Build on Meta Open Weight Models" $10K bonus: project must run on an eligible open-weight model, verified by the infra partner. | confirmed (Guide) — bonus eligibility is separate from the credit grant |
 | Data-use mode (training/retention on submitted prompts). | **unresolved** — not on pages read; check the provider's terms/console before sending real data |
 
+## Account state observed in the Meta console (read-only, 2026-10-28)
+- Real account context: team `4342689009281276`, project `4412949615620836` (the URL's
+  `team_id=123` was a placeholder).
+- Models page shows **"Could not check model access"** — entitlement did not load; retry needed.
+- Usage (Oct 22–28): **Spend ₹0.00**, 0 requests/tokens/tool-calls. **No applied-credit balance
+  is displayed** on Dashboard or Usage — the $150 grant is **not confirmed** from what's visible.
+
 ## Unresolved / to retrieve from your account
-- Full Discord message permalinks for the above announcements (login-gated).
+- Full Discord message permalinks for announcements (Discord is login-gated in this session).
 - The actual verified Baseten grant **form** link and its current conditions.
 - The formal **Official Rules** document (must be accepted; see `RULES.md`).
-- Whether any grant has actually been **approved** for your account (console, read-only).
+- Confirm the **applied $150 credit** and model entitlement (retry the Models access check;
+  find the billing/credits view).
