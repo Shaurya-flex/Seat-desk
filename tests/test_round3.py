@@ -61,6 +61,19 @@ def test_explicit_interval_retained():
     assert r2["availability"]["query"]["end"] == "15:00"
 
 
+# --- anaphoric follow-up keeps the explicit interval and applies the seat filter ---
+def test_anaphor_followup_preserves_interval_and_seat():
+    a = _a()
+    r1 = a.handle("Are seats free tomorrow 06:00-07:00?")
+    assert r1["availability"]["query"]["start"] == "06:00"
+    r2 = a.handle("Is seat S01 free in it?")
+    assert r2["route"] == "availability"
+    assert r2["availability"]["query"]["seat_id"] == "S01"
+    assert r2["availability"]["query"]["start"] == "06:00"
+    assert r2["availability"]["query"]["end"] == "07:00"
+    assert r2["availability"]["query"]["date"] == "2026-10-28"
+
+
 # --- retry/timeout guard ---
 def test_run_guarded_returns():
     assert run_guarded(lambda: 5, retries=1, timeout_s=1.0) == 5
@@ -85,5 +98,48 @@ def test_run_guarded_exhausts_retries():
 
 
 def test_run_guarded_timeout():
-    with pytest.raises(TimeoutExceeded):
-        run_guarded(lambda: time.sleep(2), retries=0, timeout_s=0.2)
+    import threading
+    ev = threading.Event()
+    try:
+        with pytest.raises(TimeoutExceeded):
+            run_guarded(lambda: ev.wait(5), retries=0, timeout_s=0.2)
+    finally:
+        ev.set()   # release the worker so it does not linger
+
+
+def test_run_guarded_timeout_returns_promptly():
+    """Regression for the ThreadPoolExecutor-wait bug: the guard must return in
+    ~timeout_s, not wait for the slow worker to finish."""
+    import threading
+    ev = threading.Event()
+    start = time.monotonic()
+    try:
+        with pytest.raises(TimeoutExceeded):
+            run_guarded(lambda: ev.wait(5), retries=0, timeout_s=0.2)
+        elapsed = time.monotonic() - start
+        assert elapsed < 1.0, f"guard blocked on worker ({elapsed:.2f}s)"
+    finally:
+        ev.set()
+
+
+def test_run_guarded_classified_retry_no_retry_on_4xx():
+    calls = {"n": 0}
+    class AuthError(Exception):
+        pass
+    def f():
+        calls["n"] += 1
+        raise AuthError("401")
+    with pytest.raises(AuthError):
+        run_guarded(f, retries=3, timeout_s=1.0, is_retryable=lambda e: not isinstance(e, AuthError))
+    assert calls["n"] == 1   # not retried
+
+
+def test_run_guarded_overall_deadline():
+    calls = {"n": 0}
+    def flaky():
+        calls["n"] += 1
+        time.sleep(0.05)
+        raise ValueError("transient")
+    with pytest.raises((ValueError, TimeoutExceeded)):
+        run_guarded(flaky, retries=100, timeout_s=1.0, deadline_s=0.2)
+    assert calls["n"] < 100   # overall deadline cut the retry loop short

@@ -20,8 +20,12 @@ sys.path.insert(0, str(BASE))
 
 from app.workflow import build_default_assistant   # noqa: E402
 from app.verify import verify_consistency          # noqa: E402
+from app.retrieval import load_pack                # noqa: E402
+from app.tools import AvailabilityTool             # noqa: E402
 
 SAMPLE = BASE / "knowledge" / "policies.sample.json"
+PACK = load_pack(SAMPLE)
+RTOOL = AvailabilityTool(BASE / "fixtures")        # independent recompute tool
 
 REQUIRED_ROUTE = {
     "grounded": "policy", "tool": "availability", "followup": "availability",
@@ -42,7 +46,7 @@ def run_case(case) -> dict:
 def checks_for(case, r) -> list[tuple[str, bool, bool]]:
     checks: list[tuple[str, bool, bool]] = []
     # evaluator consistency (required, every case)
-    vc = verify_consistency(r)
+    vc = verify_consistency(r, pack=PACK, recheck_tool=RTOOL)
     checks.append((f"consistency{'' if vc['ok'] else ':' + ','.join(vc['issues'])}", vc["ok"], True))
     if r.get("handoff") is not None:
         checks.append(("handoff_not_sent", r["handoff"]["delivered"] is False, True))

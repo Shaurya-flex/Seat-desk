@@ -17,6 +17,11 @@ sys.path.insert(0, str(BASE))
 
 from app.workflow import build_default_assistant  # noqa: E402
 from app.verify import verify_consistency          # noqa: E402
+from app.retrieval import load_pack                # noqa: E402
+from app.tools import AvailabilityTool             # noqa: E402
+
+PACK = load_pack(BASE / "knowledge" / "policies.sample.json")
+RTOOL = AvailabilityTool(BASE / "fixtures")        # independent recompute tool
 
 ROUTE_MAP = {"grounded": "policy", "tool": "availability",
              "handoff": "handoff", "no_answer": "no_answer", "injection": "injection"}
@@ -29,7 +34,7 @@ def check_case(case) -> tuple[str, list[tuple[str, bool, bool]]]:
     exp = ROUTE_MAP.get(case["route"], case["route"])
     checks: list[tuple[str, bool, bool]] = [("route", r["route"] == exp, True)]
 
-    vc = verify_consistency(r)
+    vc = verify_consistency(r, pack=PACK, recheck_tool=RTOOL)
     checks.append((f"consistency{'' if vc['ok'] else ':' + ','.join(vc['issues'])}", vc["ok"], True))
 
     ans = (r["answer"] or "").lower()
@@ -65,8 +70,8 @@ def main() -> int:
         print(f"{mark} {c['id']} [{c['lang']}] {c['route']:<9}{detail}")
 
     print(f"\nrequired-check failures: {failed}")
-    print("Note: routing/citation checks only. In-question conflicting figures (e.g. '300 or 500?') "
-          "are not yet detected (held-out h08); answer nuance still needs the live model + human review.")
+    print("Note: in-question conflicting figures (e.g. '300 or 500?') are not yet detected "
+          "(regression h08); answer nuance still needs the live model + human review.")
     return 1 if failed else 0
 
 

@@ -172,8 +172,9 @@ class Assistant:
                                                     self._base("availability", probe.lang))
             self.pending = None                        # abandon obsolete pending
 
-        # Completed-turn follow-up or correction ("and seat S02?", "actually morning").
-        if self.last_availability and _is_continuation(enquiry):
+        # Completed-turn follow-up/correction/anaphor ("and seat S02?", "actually
+        # morning", "is S01 free in it?") — reuse the full prior query (interval kept).
+        if self.last_availability and (_is_continuation(enquiry) or _has_anaphor(enquiry)):
             new_ref = _resolve_timeref(enquiry, self.tool.clock)
             if any(k in new_ref for k in ("date", "slot", "start", "end", "seat_id")):
                 probe = self.model.classify(enquiry)

@@ -15,12 +15,15 @@ Planned (not yet enforced in code): retry limiting — see RETRY_ENFORCEMENT.
 from __future__ import annotations
 
 import concurrent.futures
+import time
 from dataclasses import dataclass
 from typing import Callable, Optional, TypeVar
 
-# Retry + timeout are enforced by run_guarded() (below), which the live adapter
-# uses on every provider call. They are not exercised while the live adapter is
-# disabled, but the mechanism is real and tested.
+# Retry + a bounded wall-clock deadline are enforced by run_guarded(). The REAL
+# cancellation of a hung network call must come from the transport timeout
+# (httpx.Timeout) in the live adapter: run_guarded cannot kill a worker thread,
+# so a timed-out call may STILL BE RUNNING and may be billed. We never imply it
+# was cancelled or free.
 RETRY_ENFORCEMENT = "enforced_in_run_guarded"
 
 
@@ -43,30 +46,59 @@ class LimitExceeded(Exception):
 
 
 class TimeoutExceeded(LimitExceeded):
-    """Raised when a guarded call exceeds its timeout."""
+    """Raised when a guarded call exceeds its timeout/deadline.
+
+    The underlying worker/request may still be running and may be billed — this
+    is a wall-clock guard, not a cancellation.
+    """
 
 
 _T = TypeVar("_T")
 
 
 def run_guarded(fn: Callable[[], _T], *, retries: int, timeout_s: float,
+                deadline_s: Optional[float] = None,
+                is_retryable: Optional[Callable[[Exception], bool]] = None,
                 on_retry: Optional[Callable[[int, Exception], None]] = None) -> _T:
-    """Run fn() with a hard per-attempt timeout and a bounded number of retries.
+    """Run fn() with a per-attempt wall-clock bound, an optional overall deadline,
+    and classified retries.
 
-    attempts = retries + 1. Raises TimeoutExceeded on timeout, or the last
-    exception after retries are exhausted. Note: a timed-out worker thread cannot
-    be force-killed, so fn must be side-effect-safe to abandon.
+    attempts = retries + 1. Returns within ~timeout_s even if fn keeps running: we
+    do NOT block on executor shutdown. We also cannot kill the worker thread, so a
+    timed-out fn may still execute to completion (and may be billed). The real fix
+    for network hangs is a transport-level timeout in fn itself.
+
+    is_retryable(e): if provided and returns False, the exception is raised
+    immediately (e.g. do not retry a 4xx/auth error). Timeouts are always retryable
+    up to the attempt/deadline budget.
     """
     attempts = max(1, retries + 1)
+    start = time.monotonic()
     last: Exception = RuntimeError("run_guarded: no attempt made")
     for i in range(attempts):
+        if deadline_s is not None:
+            remaining = deadline_s - (time.monotonic() - start)
+            if remaining <= 0:
+                raise TimeoutExceeded(f"overall deadline {deadline_s}s exceeded")
+            per = min(timeout_s, remaining)
+        else:
+            per = timeout_s
+
+        ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        fut = ex.submit(fn)
         try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                return ex.submit(fn).result(timeout=timeout_s)
+            result = fut.result(timeout=per)
+            ex.shutdown(wait=False)
+            return result
         except concurrent.futures.TimeoutError:
-            last = TimeoutExceeded(f"call exceeded {timeout_s}s")
-        except Exception as e:  # noqa: BLE001 - bounded retry on any provider error
+            ex.shutdown(wait=False, cancel_futures=True)   # do not block; worker may still run
+            last = TimeoutExceeded(
+                f"call exceeded {per:.3f}s; the request may still be running and may be billed")
+        except Exception as e:  # noqa: BLE001
+            ex.shutdown(wait=False)
             last = e
+            if is_retryable is not None and not is_retryable(e):
+                raise
         if on_retry and i < attempts - 1:
             on_retry(i, last)
     raise last
