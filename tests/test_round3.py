@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from app.workflow import build_default_assistant
-from app.limits import run_guarded, TimeoutExceeded
+from app.limits import run_guarded, TimeoutExceeded, OutstandingTracker, LimitExceeded
 
 SAMPLE = Path(__file__).resolve().parent.parent / "knowledge" / "policies.sample.json"
 
@@ -143,3 +143,32 @@ def test_run_guarded_overall_deadline():
     with pytest.raises((ValueError, TimeoutExceeded)):
         run_guarded(flaky, retries=100, timeout_s=1.0, deadline_s=0.2)
     assert calls["n"] < 100   # overall deadline cut the retry loop short
+
+
+# --- bounded outstanding requests: no overlapping retry while one may still run ---
+def test_outstanding_requests_bounded():
+    import threading
+    ev = threading.Event()
+    tr = OutstandingTracker(max_outstanding=1)
+    try:
+        with pytest.raises(LimitExceeded):
+            # 1st attempt times out holding the only slot; the retry's acquire fails
+            run_guarded(lambda: ev.wait(5), retries=1, timeout_s=0.2, tracker=tr)
+    finally:
+        ev.set()
+    # the abandoned worker releases its slot once it actually finishes
+    for _ in range(100):
+        if tr.outstanding == 0:
+            break
+        time.sleep(0.02)
+    assert tr.outstanding == 0
+
+
+def test_outstanding_allows_within_cap():
+    tr = OutstandingTracker(max_outstanding=2)
+    assert run_guarded(lambda: 7, retries=0, timeout_s=1.0, tracker=tr) == 7
+    for _ in range(50):
+        if tr.outstanding == 0:
+            break
+        time.sleep(0.01)
+    assert tr.outstanding == 0

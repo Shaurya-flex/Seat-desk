@@ -28,3 +28,17 @@ Safety/positioning:
 - Read-only: no booking writes, payments, or member-record changes.
 - Handoffs are copyable summaries, never sent (`delivered: false`).
 - Every response carries a persistent "Synthetic data · Mock model" transparency label.
+
+## rc4 (2026-10-29): live integration wiring complete (still mock-HTTP verified)
+- Live-model extraction is wired into the workflow: validated `ExtractedFields`
+  (date/start/end/slot/seat) drive the deterministic availability tool. No keyword
+  parser is used for a live model's fields; corrections/anaphora reuse the prior query.
+- Tool calling is implemented as **model extraction followed by deterministic
+  application dispatch** of the read-only availability tool. The provider's **native
+  tool-call schema is deferred** until verified against official docs — stated honestly,
+  not claimed as implemented.
+- **Bounded outstanding requests**: a retry cannot launch while a timed-out request may
+  still be running (`OutstandingTracker`); abandoned calls release their slot on finish.
+- Still **not live-verified**: no real provider call has run. The full extraction -> tool
+  -> response path is exercised with mocked HTTP only; this is not evidence of
+  Hindi/Hinglish model quality.

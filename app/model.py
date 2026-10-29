@@ -169,7 +169,8 @@ class LiveModelAdapter:
     def __init__(self, base_url: str | None, model_id: str | None,
                  api_key: str | None, verified: bool = False,
                  retries: int = 2, timeout_s: float = 20.0, deadline_s: float = 45.0,
-                 max_output_tokens: int = 512, http_client=None):
+                 max_output_tokens: int = 512, max_outstanding: int = 2, http_client=None):
+        from .limits import OutstandingTracker
         self.base_url = base_url
         self.model_id = model_id
         self._api_key = api_key
@@ -178,6 +179,7 @@ class LiveModelAdapter:
         self.timeout_s = timeout_s
         self.deadline_s = deadline_s
         self.max_output_tokens = max_output_tokens
+        self._tracker = OutstandingTracker(max_outstanding)   # bounds concurrent + abandoned calls
         self._client = http_client          # injectable httpx-like client for contract tests
         self.name = f"live:{model_id or 'unset'}"
 
@@ -233,7 +235,7 @@ class LiveModelAdapter:
         data = run_guarded(
             lambda: self._post("/chat/completions", self._classify_payload(enquiry)),
             retries=self.retries, timeout_s=self.timeout_s, deadline_s=self.deadline_s,
-            is_retryable=self._is_retryable,
+            is_retryable=self._is_retryable, tracker=self._tracker,
         )
         return self.parse_classification(data)
 
@@ -264,7 +266,7 @@ class LiveModelAdapter:
         data = run_guarded(
             lambda: self._post("/chat/completions", self._classify_payload(enquiry)),
             retries=self.retries, timeout_s=self.timeout_s, deadline_s=self.deadline_s,
-            is_retryable=self._is_retryable,
+            is_retryable=self._is_retryable, tracker=self._tracker,
         )
         return self.parse_extraction(data)
 

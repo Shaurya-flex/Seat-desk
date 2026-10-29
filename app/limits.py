@@ -15,6 +15,7 @@ Planned (not yet enforced in code): retry limiting — see RETRY_ENFORCEMENT.
 from __future__ import annotations
 
 import concurrent.futures
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable, Optional, TypeVar
@@ -53,13 +54,44 @@ class TimeoutExceeded(LimitExceeded):
     """
 
 
+class OutstandingTracker:
+    """Bounds concurrent + still-running (abandoned-after-timeout) requests.
+
+    A timed-out worker thread cannot be killed, so it keeps its slot until it
+    actually finishes (released via a done-callback). A retry therefore cannot
+    launch an overlapping request once the cap is reached — acquire() raises.
+    """
+
+    def __init__(self, max_outstanding: int):
+        self.max = max_outstanding
+        self._n = 0
+        self._lock = threading.Lock()
+
+    def acquire(self) -> None:
+        with self._lock:
+            if self._n >= self.max:
+                raise LimitExceeded(
+                    f"max outstanding requests ({self.max}) reached; a previous call may still be running")
+            self._n += 1
+
+    def release(self) -> None:
+        with self._lock:
+            self._n = max(0, self._n - 1)
+
+    @property
+    def outstanding(self) -> int:
+        with self._lock:
+            return self._n
+
+
 _T = TypeVar("_T")
 
 
 def run_guarded(fn: Callable[[], _T], *, retries: int, timeout_s: float,
                 deadline_s: Optional[float] = None,
                 is_retryable: Optional[Callable[[Exception], bool]] = None,
-                on_retry: Optional[Callable[[int, Exception], None]] = None) -> _T:
+                on_retry: Optional[Callable[[int, Exception], None]] = None,
+                tracker: Optional[OutstandingTracker] = None) -> _T:
     """Run fn() with a per-attempt wall-clock bound, an optional overall deadline,
     and classified retries.
 
@@ -84,8 +116,12 @@ def run_guarded(fn: Callable[[], _T], *, retries: int, timeout_s: float,
         else:
             per = timeout_s
 
+        if tracker is not None:
+            tracker.acquire()                      # raises LimitExceeded if over cap (incl. abandoned)
         ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         fut = ex.submit(fn)
+        if tracker is not None:
+            fut.add_done_callback(lambda f: tracker.release())   # releases even if abandoned-then-finished
         try:
             result = fut.result(timeout=per)
             ex.shutdown(wait=False)

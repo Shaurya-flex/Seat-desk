@@ -148,60 +148,78 @@ class Assistant:
             "facts": None, "warnings": [],
         }
 
+    # -- understanding (one model call per turn) --------------------------
+    def _understand(self, enquiry: str) -> dict:
+        """Resolve (lang, intent, ref) once per turn.
+
+        A live model (one exposing extract()) returns VALIDATED fields; the mock
+        uses classify() + keyword _resolve_timeref. For a live model the query
+        fields come ONLY from the model's validated extraction — never a keyword
+        fallback. (Follow-up/correction CUES are still text-based conversation
+        control, but field VALUES come from the extractor / the prior query.)
+        """
+        if hasattr(self.model, "extract"):
+            f = self.model.extract(enquiry)
+            ref = {k: getattr(f, k) for k in ("date", "start", "end", "slot", "seat_id")
+                   if getattr(f, k) is not None}
+            return {"lang": f.lang, "intent": f.intent, "ref": ref, "from_model": True}
+        c = self.model.classify(enquiry)
+        return {"lang": c.lang, "intent": c.intent,
+                "ref": _resolve_timeref(enquiry, self.tool.clock), "from_model": False}
+
     # -- main entry -------------------------------------------------------
     def handle(self, enquiry: str) -> dict:
         self.budget.start_turn()
+        u = self._understand(enquiry)
+        lang, intent, ref, from_model = u["lang"], u["intent"], u["ref"], u["from_model"]
 
-        # Track the most recently mentioned date/slot for anaphora resolution.
-        probe_ref = _resolve_timeref(enquiry, self.tool.clock)
-        if "date" in probe_ref:
-            self.ctx["date"] = probe_ref["date"]
-        if "slot" in probe_ref:
-            self.ctx["slot"] = probe_ref["slot"]
+        # Keyword-path anaphora context (mock only; live reuses the prior query).
+        if not from_model:
+            if "date" in ref:
+                self.ctx["date"] = ref["date"]
+            if "slot" in ref:
+                self.ctx["slot"] = ref["slot"]
 
         # Resume a pending availability clarification if this message continues it.
         if self.pending and self.pending.get("intent") == "availability":
-            new_ref = _resolve_timeref(enquiry, self.tool.clock)
-            probe = self.model.classify(enquiry)
-            fresh_intent = probe.intent in ("injection", "handoff") or probe.intent == "policy"
-            supplies = any(k in new_ref for k in ("date", "slot", "start", "end", "seat_id"))
+            fresh_intent = intent in ("injection", "handoff", "policy")
+            supplies = any(k in ref for k in ("date", "slot", "start", "end", "seat_id"))
             if supplies and not fresh_intent:
-                merged = _merge_availability(self.pending["fields"], new_ref)
+                merged = _merge_availability(self.pending["fields"], ref)
                 self.pending = None
-                return self._availability_with_ref(enquiry, probe.lang, merged,
-                                                    self._base("availability", probe.lang))
+                return self._availability_with_ref(enquiry, lang, merged,
+                                                    self._base("availability", lang), from_model)
             self.pending = None                        # abandon obsolete pending
 
-        # Completed-turn follow-up/correction/anaphor ("and seat S02?", "actually
-        # morning", "is S01 free in it?") — reuse the full prior query (interval kept).
+        # Completed-turn follow-up / correction / anaphor -> reuse the full prior query.
         if self.last_availability and (_is_continuation(enquiry) or _has_anaphor(enquiry)):
-            new_ref = _resolve_timeref(enquiry, self.tool.clock)
-            if any(k in new_ref for k in ("date", "slot", "start", "end", "seat_id")):
-                probe = self.model.classify(enquiry)
-                if probe.intent != "injection":
-                    merged = _merge_availability(self.last_availability, new_ref)
-                    return self._availability_with_ref(enquiry, probe.lang, merged,
-                                                        self._base("availability", probe.lang))
+            if intent != "injection" and any(k in ref for k in ("date", "slot", "start", "end", "seat_id")):
+                merged = _merge_availability(self.last_availability, ref)
+                return self._availability_with_ref(enquiry, lang, merged,
+                                                    self._base("availability", lang), from_model)
 
-        cls = self.model.classify(enquiry)
-        lang = cls.lang
-
-        if cls.intent == "injection":
+        if intent == "injection":
             resp = self._base("injection", lang)
             resp["answer"] = _t(lang,
                 "I can only help with approved library information, so I can't do that.",
                 "मैं केवल स्वीकृत लाइब्रेरी जानकारी में मदद कर सकता हूँ, यह नहीं कर सकता।")
             return resp
 
-        if cls.intent == "availability":
-            return self._availability_with_ref(
-                enquiry, lang, _resolve_timeref(enquiry, self.tool.clock),
-                self._base("availability", lang))
+        if intent == "availability":
+            return self._availability_with_ref(enquiry, lang, ref,
+                                                self._base("availability", lang), from_model)
 
-        if cls.intent == "policy":
+        if intent == "clarify":
+            resp = self._base("clarify", lang)
+            resp["clarification"] = _t(lang,
+                "Could you give a bit more detail so I can help?",
+                "कृपया थोड़ा और बताएं ताकि मैं मदद कर सकूँ?")
+            return resp
+
+        if intent == "policy":
             return self._policy(enquiry, lang)
 
-        if cls.intent == "handoff":
+        if intent == "handoff":
             resp = self._base("handoff", lang)
             resp["handoff"] = build_handoff_summary(
                 enquiry, lang, reason="consequential or personal request", pack=self.pack)
@@ -254,28 +272,34 @@ class Assistant:
 
         return self._no_answer(enquiry, lang)
 
-    def _availability_with_ref(self, enquiry: str, lang: str, ref: dict, resp: dict) -> dict:
-        # --- multiple alternatives offered -> clarify, never silently pick one ---
-        alts = _alternatives(enquiry)
-        if len(alts["slots"]) > 1 or len(alts["dates"]) > 1 or len(alts["ranges"]) > 1:
-            self.pending = {"intent": "availability", "fields": {}}
-            if len(alts["dates"]) <= 1 and "date" in ref:
-                self.pending["fields"]["date"] = ref["date"]
-            if "seat_id" in ref:
-                self.pending["fields"]["seat_id"] = ref["seat_id"]
-            opts = " / ".join(alts["slots"]) if len(alts["slots"]) > 1 else " / ".join(map(str, alts["dates"]))
-            resp["route"] = "clarify"
-            resp["clarification"] = _t(lang,
-                f"You gave more than one option ({opts}). Which should I check?",
-                f"आपने एक से ज़्यादा विकल्प दिए ({opts})। मैं कौन सा देखूँ?")
-            return resp
+    def _availability_with_ref(self, enquiry: str, lang: str, ref: dict, resp: dict,
+                               from_model: bool = False) -> dict:
+        # Keyword text-scans (alternatives, anaphora ctx-fill) are the MOCK path only.
+        # For a live model, ambiguity is signalled by the model (intent=clarify) and
+        # anaphora is resolved via the prior query merge — field VALUES never come
+        # from keyword parsing here.
+        if not from_model:
+            # --- multiple alternatives offered -> clarify, never silently pick one ---
+            alts = _alternatives(enquiry)
+            if len(alts["slots"]) > 1 or len(alts["dates"]) > 1 or len(alts["ranges"]) > 1:
+                self.pending = {"intent": "availability", "fields": {}}
+                if len(alts["dates"]) <= 1 and "date" in ref:
+                    self.pending["fields"]["date"] = ref["date"]
+                if "seat_id" in ref:
+                    self.pending["fields"]["seat_id"] = ref["seat_id"]
+                opts = " / ".join(alts["slots"]) if len(alts["slots"]) > 1 else " / ".join(map(str, alts["dates"]))
+                resp["route"] = "clarify"
+                resp["clarification"] = _t(lang,
+                    f"You gave more than one option ({opts}). Which should I check?",
+                    f"आपने एक से ज़्यादा विकल्प दिए ({opts})। मैं कौन सा देखूँ?")
+                return resp
 
-        # --- anaphora: 'in it' / 'उसमें' reuses the last-mentioned date/slot ---
-        if _has_anaphor(enquiry):
-            if self.ctx.get("date") and "date" not in ref:
-                ref["date"] = self.ctx["date"]
-            if self.ctx.get("slot") and "slot" not in ref and "start" not in ref:
-                ref["slot"] = self.ctx["slot"]
+            # --- anaphora: 'in it' / 'उसमें' reuses the last-mentioned date/slot ---
+            if _has_anaphor(enquiry):
+                if self.ctx.get("date") and "date" not in ref:
+                    ref["date"] = self.ctx["date"]
+                if self.ctx.get("slot") and "slot" not in ref and "start" not in ref:
+                    ref["slot"] = self.ctx["slot"]
 
         # --- conflict: a slot AND an explicit time range that disagree (fix 2) ---
         if "slot" in ref and "start" in ref and "end" in ref:
