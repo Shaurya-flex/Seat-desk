@@ -51,3 +51,15 @@ grant.
 - The formal **Official Rules** document (must be accepted; see `RULES.md`).
 - Confirm the **applied $150 credit** and model entitlement (retry the Models access check;
   find the billing/credits view).
+
+## Pricing & data-use (confirmed from docs + #faqs, 2026-10-29)
+Source: https://dev.meta.ai/docs/pricing-rate-limits ; https://dev.meta.ai/help/billing/spend-limit-alert ; Discord #faqs.
+- `muse-spark-1.3` **Standard**: $1.25 input / $4.25 output per 1M tokens ($0.15 cached). Your content is
+  NOT used to train Meta models.
+- `muse-spark-1.3-contributor`: $0.10 / $0.20 per 1M — cheaper, BUT you grant Meta permission to train on
+  your prompts/code/files/responses (only for Muse Spark 1.2/1.3).
+- `muse-voice-transcribe-1.0`: $0.18 per hour of audio; zero data retention (ZDR).
+- **Spend-limit alerts are notifications, NOT a hard cap** ("no spending limit that places a hard cap on
+  usage"). A card is required; a timed-out request may still bill. The only hard control is one call, stop.
+- For the demo use **muse-spark-1.3 Standard** (content not trained on). Confirm the $150 grant is applied
+  before any call; grant application to Standard vs Contributor is not separately stated — both bill the account.

@@ -30,3 +30,20 @@ Compliance posture: we build eligible NEW work during the window, keep the repo 
 use Meta models only through a verified endpoint, and clearly separate new vs reused work.
 We do **not** claim final compliance until the formal Official Rules are read/accepted and a
 genuine Meta round trip is demonstrated. We do not accept legal terms on the user's behalf.
+
+## Discord-confirmed (organizer posts, read 2026-10-29)
+Channels: #rules (Ivan, 26 Oct), #faqs (Cerebral Valley APP + Kai|CV + Maya, 26–27 Oct).
+- Build period is officially **Oct 27 – Nov 4** (Kai|CV correction: "after the kickoff session"). — confirmed
+- **Standalone repository**: the submitted repo must be a FRESH, standalone extract containing ONLY work
+  done during the event; keep any existing codebase out of it. The 3-min demo must open with one line
+  stating what was pre-existing vs built this week (Kai|CV, 26 Oct 18:12). — confirmed. Seat Desk already
+  satisfies this (separate repo, not inside `moodily`).
+- **$150 Meta Model API credits**: claimed individually by Nov 4 9 PM ET; the claim form is requested from
+  @CV; submit the SAME email used to apply and the numeric team_id from the dev.meta.ai URL. See Hackathon
+  Credit Terms §1–3; §3.8 covers open-weight use. — confirmed (#faqs)
+- **A payment card is required** to use credits / make calls; a temporary pre-authorisation appears and
+  releases in a few business days. "Don't assume a Spend Limit notification stops billing." — confirmed
+- Partner credits: Baseten $100 + 2M TPM (≤2,000 participants, approval by use case; Baseten model id
+  `meta-models/muse-spark-open-1026`); Modal $100 (first 1,000); Fireworks TBC. — confirmed (#faqs)
+- Judging: fit a theme + meaningfully use Meta Model API and/or open-weight models; then Impact, Meta
+  tooling, Technical depth, Demo; top 5 per track to finals. — confirmed

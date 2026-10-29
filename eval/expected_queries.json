@@ -19,6 +19,16 @@
       "status": "closed" },
     { "id": "e5", "enquiry": "Are seats free on 2026-10-30 evening?",
       "request": {"date": "2026-10-30", "slot": "evening"},
-      "status": "availability_unknown" }
+      "status": "availability_unknown" },
+    { "id": "e6", "enquiry": "Are seats free on 2026-10-28 evening?",
+      "note": "frozen-clock demonstration (clock is 2026-10-27); explicit date in coverage",
+      "request": {"date": "2026-10-28", "slot": "evening"},
+      "status": "ok", "available": 6, "considered": 6 },
+    { "id": "e7", "enquiry": "Is seat S02 free on 2026-10-28 in the morning?",
+      "request": {"date": "2026-10-28", "slot": "morning", "seat_id": "S02"},
+      "status": "ok", "available": 1, "considered": 1 },
+    { "id": "e8", "enquiry": "Are any seats free?",
+      "note": "no date/slot given -> must clarify, not guess",
+      "clarify": true }
   ]
 }

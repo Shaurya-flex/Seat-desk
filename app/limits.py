@@ -84,6 +84,25 @@ class OutstandingTracker:
             return self._n
 
 
+_SHARED_TRACKERS: "dict[str, OutstandingTracker]" = {}
+_REG_LOCK = threading.Lock()
+
+
+def get_shared_tracker(scope_key: str, max_outstanding: int) -> OutstandingTracker:
+    """Return a PROCESS-LOCAL tracker shared by all callers with the same scope_key
+    (intended: provider+project). This bounds concurrent/abandoned requests across
+    adapter instances in THIS process. It is NOT an account-wide provider spend cap —
+    other processes/machines are not counted, and a timed-out request may still bill.
+    Customer conversation state stays separate (per Assistant), not in here.
+    """
+    with _REG_LOCK:
+        t = _SHARED_TRACKERS.get(scope_key)
+        if t is None:
+            t = OutstandingTracker(max_outstanding)
+            _SHARED_TRACKERS[scope_key] = t
+        return t
+
+
 _T = TypeVar("_T")
 
 

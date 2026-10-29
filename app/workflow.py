@@ -142,6 +142,7 @@ class Assistant:
         return {
             "route": route, "lang": lang,
             "provider": self.model.name, "simulated": self.model.simulated,
+            "transport": getattr(self.model, "transport", "builtin"),   # mocked-http | live-http | builtin
             "transparency": self._transparency(),
             "answer": None, "citations": [], "citation_check": None,
             "availability": None, "handoff": None, "clarification": None,
@@ -159,7 +160,11 @@ class Assistant:
         control, but field VALUES come from the extractor / the prior query.)
         """
         if hasattr(self.model, "extract"):
-            f = self.model.extract(enquiry)
+            f = self.model.extract(
+                enquiry,
+                now_iso=self.tool.clock.as_of.isoformat(),   # same clock as the availability engine
+                prior=self.last_availability,                 # context for follow-ups (data, not instructions)
+            )
             ref = {k: getattr(f, k) for k in ("date", "start", "end", "slot", "seat_id")
                    if getattr(f, k) is not None}
             return {"lang": f.lang, "intent": f.intent, "ref": ref, "from_model": True}

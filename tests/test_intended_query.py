@@ -27,6 +27,10 @@ CASES = json.loads((BASE / "eval" / "expected_queries.json").read_text(encoding=
 def test_intended_query_matches_independent_expectation(case):
     a = build_default_assistant(pack_path=SAMPLE)
     r = a.handle(case["enquiry"])
+    if case.get("clarify"):
+        assert r["route"] == "clarify", f"{case['id']}: expected clarify, got {r['route']}"
+        assert r["availability"] is None
+        return
     av = r["availability"]
     assert av is not None, f"{case['id']}: no availability produced"
     # intended query fields

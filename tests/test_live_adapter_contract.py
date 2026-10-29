@@ -217,3 +217,49 @@ def test_make_model_live_requires_config():
 def test_make_model_unknown_mode_raises():
     with pytest.raises(ValueError):
         make_model("auto")
+
+
+# --- extraction contract: field schema + reference clock + prior context in payload ---
+from app.limits import OutstandingTracker, get_shared_tracker, LimitExceeded  # noqa: E402
+
+
+def test_payload_includes_contract_and_reference_clock():
+    client = FakeClient([_ok("hi", "availability")])
+    a = LiveModelAdapter(BASE, MODEL, "k", verified=True, http_client=client)
+    a.extract("कल शाम?", now_iso="2026-10-27T10:00:00+05:30",
+              prior={"date": "2026-10-28", "slot": "evening"})
+    sys_txt = " ".join(m["content"] for m in client.last_json["messages"] if m["role"] == "system")
+    assert "YYYY-MM-DD" in sys_txt and "seat_id" in sys_txt      # explicit field contract
+    assert "reference_datetime: 2026-10-27" in sys_txt and "Asia/Kolkata" in sys_txt
+    assert "prior_query" in sys_txt
+    assert client.last_json["max_tokens"] == 512
+
+
+# --- shared process-scope limiter across adapter instances ---
+def test_get_shared_tracker_same_key():
+    t1 = get_shared_tracker("unit-prov|unit-proj", 2)
+    assert get_shared_tracker("unit-prov|unit-proj", 9) is t1   # same key -> same instance
+    assert get_shared_tracker("unit-prov|other", 2) is not t1
+
+
+def test_shared_tracker_bounds_two_adapters():
+    import threading
+    tr = OutstandingTracker(1)
+    ev = threading.Event()
+
+    class Block:
+        def post(self, url, json=None, headers=None):
+            ev.wait(5)
+            return _ok()
+        def close(self):
+            pass
+
+    a1 = LiveModelAdapter(BASE, MODEL, "k", verified=True, tracker=tr, http_client=Block(), retries=0, timeout_s=0.2)
+    a2 = LiveModelAdapter(BASE, MODEL, "k", verified=True, tracker=tr, http_client=FakeClient([_ok()]), retries=0, timeout_s=0.2)
+    try:
+        with pytest.raises(Exception):          # a1 times out holding the only shared slot
+            a1.classify("x")
+        with pytest.raises(LimitExceeded):      # a2 cannot overlap while a1's call may still run
+            a2.classify("x")
+    finally:
+        ev.set()

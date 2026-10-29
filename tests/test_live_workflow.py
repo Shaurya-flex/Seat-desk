@@ -122,3 +122,16 @@ def test_live_no_silent_fallback_on_persistent_error():
     a = live_assistant([R({}, 500), R({}, 500), R({}, 500)])  # retries exhausted
     with pytest.raises(httpx.HTTPStatusError):                # raises, never a mock answer
         a.handle("are seats free tomorrow evening?")
+
+
+def test_transport_marked_mocked_http():
+    a = live_assistant([ext("en", "availability", date="2026-10-28", slot="evening")])
+    r = a.handle("are seats free on 2026-10-28 evening?")
+    assert r["transport"] == "mocked-http"       # distinguishable from a real provider response
+    assert r["simulated"] is False
+
+
+def test_transport_builtin_for_mock_model():
+    from app.workflow import build_default_assistant
+    r = build_default_assistant(pack_path=SAMPLE).handle("What is the monthly fee?")
+    assert r["transport"] == "builtin"
