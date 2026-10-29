@@ -39,8 +39,8 @@ grant.
 | Data-use mode (training/retention on submitted prompts). | **unresolved** — not on pages read; check the provider's terms/console before sending real data |
 
 ## Account state observed in the Meta console (read-only, 2026-10-28)
-- Real account context: team `4342689009281276`, project `4412949615620836` (the URL's
-  `team_id=123` was a placeholder).
+- Real account context: your actual team/project (not the URL's placeholder `team_id=123`).
+  (Specific numeric IDs are kept out of this repo — see the session report instead.)
 - Models page shows **"Could not check model access"** — entitlement did not load; retry needed.
 - Usage (Oct 22–28): **Spend ₹0.00**, 0 requests/tokens/tool-calls. **No applied-credit balance
   is displayed** on Dashboard or Usage — the $150 grant is **not confirmed** from what's visible.
