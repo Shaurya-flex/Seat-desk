@@ -16,6 +16,7 @@ Built for the Meta Global AI Developer Hackathon (Oct–Nov 2026), Indie Develop
 | Real Meta model integration | **adapter implemented; request contract verified against official docs (2 Nov 2026)**; one-shot live harness ready (`scripts/live_once.py`); **no billed call made yet** |
 | Hindi answer quality | **unproven** — the mock copies approved text; it is not a language-quality signal |
 | Human handoff delivery | **not implemented** — handoff produces a copyable summary only; nothing is sent |
+| Voice (Hindi audio) | **adapter + one-shot harness implemented; contract + Hindi support verified from official docs (2 Nov 2026)**; transcript requires explicit confirmation; **not wired into the main flow; no live transcription made yet** |
 
 Account access exists (hackathon credits + pay-as-you-go key), but **no paid call has been made**: usage shows zero requests. The live harness makes exactly one call, only when run explicitly with `--run --i-approve-spend`.
 
