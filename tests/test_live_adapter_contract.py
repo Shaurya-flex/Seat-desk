@@ -173,7 +173,8 @@ def test_payload_carries_output_token_limit():
     client = FakeClient([_ok()])
     a = LiveModelAdapter(BASE, MODEL, "k", verified=True, http_client=client, max_output_tokens=256)
     a.classify("x")
-    assert client.last_json["max_tokens"] == 256
+    assert client.last_json["max_completion_tokens"] == 256
+    assert "max_tokens" not in client.last_json          # deprecated alias must not be sent
 
 
 # --- typed extraction (parse_extraction) + validation ---
@@ -232,7 +233,10 @@ def test_payload_includes_contract_and_reference_clock():
     assert "YYYY-MM-DD" in sys_txt and "seat_id" in sys_txt      # explicit field contract
     assert "reference_datetime: 2026-10-27" in sys_txt and "Asia/Kolkata" in sys_txt
     assert "prior_query" in sys_txt
-    assert client.last_json["max_tokens"] == 512
+    assert client.last_json["max_completion_tokens"] == 512
+    # Muse Spark always reasons; effort must be sent explicitly and never "none".
+    assert client.last_json["reasoning_effort"] == "minimal"
+    assert client.last_json["response_format"]["json_schema"]["strict"] is True
 
 
 # --- shared process-scope limiter across adapter instances ---

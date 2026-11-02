@@ -13,11 +13,11 @@ Built for the Meta Global AI Developer Hackathon (Oct–Nov 2026), Indie Develop
 | Deterministic availability engine + tests | **implemented & tested** (offline) |
 | Workflow skeleton (retrieval, routing, clarification, citation+support checks, sanitised tool, handoff summary, limits) | **implemented & tested against a MOCK model** (offline, deterministic) |
 | Mock model adapter | implemented, clearly labelled `simulated` |
-| Real Meta model integration | **not implemented** — gated on a verified endpoint + API access |
+| Real Meta model integration | **adapter implemented; request contract verified against official docs (2 Nov 2026)**; one-shot live harness ready (`scripts/live_once.py`); **no billed call made yet** |
 | Hindi answer quality | **unproven** — the mock copies approved text; it is not a language-quality signal |
 | Human handoff delivery | **not implemented** — handoff produces a copyable summary only; nothing is sent |
 
-Nothing is published; no billing is enabled; no paid calls are made.
+Account access exists (hackathon credits + pay-as-you-go key), but **no paid call has been made**: usage shows zero requests. The live harness makes exactly one call, only when run explicitly with `--run --i-approve-spend`.
 
 ### Simulated vs live
 
@@ -59,6 +59,50 @@ python eval/run_regression.py   # regression: multi-turn, tool-failure, consiste
 python -m pytest -q             # full test suite (CI runs this offline, no secrets)
 ```
 
+## Reproduce the core typed workflow (for judges)
+
+Everything below is offline and deterministic — no key, no network, no cost:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m pytest -q
+python -m app.seat_desk
+python eval/run_eval.py
+python eval/run_regression.py
+```
+
+`python -m app.seat_desk` walks the four core behaviours in one scripted
+conversation: a clarification for missing information, a deterministic
+availability answer, an approved fact with its citation, and an explicitly
+**unsent** human-handoff summary. Every turn carries the persistent
+"Synthetic data · Mock model" label.
+
+The one genuine Meta call (billed, requires a key in `.env` or the shell):
+
+```bash
+python scripts/live_once.py --estimate
+python scripts/live_once.py --run --i-approve-spend
+```
+
+`--estimate` prints the exact payload and a cost estimate without touching the
+network. `--run` makes a single request (retries=0, one outstanding request,
+explicit timeout and output cap) through the real `Assistant.handle()` path and
+writes sanitised evidence to `evidence/live_run.json`. Acceptance is
+substantive (`app/live_checks.py`): the expected interval, counts and free-seat
+set are re-derived independently from the raw fixtures, and a completed request
+with a wrong date, slot, count, seat set or an unsupported answer is recorded
+as `COMPLETED_BUT_INCORRECT`, never `SUCCESS`. Fixture availability is
+**historical synthetic demo data** (fixture clock 2026-10-27 IST), not current
+real library availability.
+
+Evidence separation: anything produced by mock or stubbed transports stays in
+tests/eval output and is labelled `mocked-http`/`builtin`; only
+`evidence/live_run.json` with `"transport": "live-http"` counts as genuine Meta
+evidence.
+
+
 Set `KNOWLEDGE_PACK=knowledge/policies.sample.json` to develop against synthetic
 demo policies; switch to `knowledge/policies.json` once real values are confirmed.
 
@@ -95,8 +139,10 @@ docs/              SCHEMA.md, RULES.md (rules sources + classification), LIMITAT
 See `docs/RULES.md` (rules sources), `docs/ELIGIBILITY.md` (model availability vs competition
 vs grant eligibility), and `docs/LIMITATIONS.md` (proven vs not). The real `LiveModelAdapter`
 is implemented with **mocked-HTTP contract tests** (transport timeout, classified retries,
-structured-extraction + read-only tool-call validation, no silent fallback) but stays
-**disabled** until a verified endpoint + account access exist — no live call has been made.
+structured-extraction + read-only tool-call validation, no silent fallback) and its request
+contract (endpoint, `max_completion_tokens`, mandatory reasoning, strict JSON-schema
+output) was verified against the official docs on 2 Nov 2026 — **no live call has
+been made yet**; `scripts/live_once.py` performs the first one explicitly.
 `app/intake.py` holds clearly-labelled **mock** audio/transcript/staff-recheck scaffolding,
 not wired into the finished text flow. Mock tests prove wiring only, not Meta integration.
 

@@ -361,11 +361,15 @@ class Assistant:
         status = result["status"]
         if status == "ok":
             free = [s for s in result["seats"] if s["available"]]
-            labels = ", ".join(s["label"] for s in free[:3])
+            shown = free[:3]
+            labels = ", ".join(s["label"] for s in shown)
+            truncated = len(free) > len(shown)      # never present a partial list as the full list
             n, total = result["summary"]["available"], result["summary"]["considered"]
+            en_sfx = (f" (e.g. {labels})." if truncated else f" ({labels})." ) if free else "."
+            hi_sfx = (f" (जैसे {labels})।" if truncated else f" ({labels})।" ) if free else "।"
             resp["answer"] = _t(lang,
-                f"{n} of {total} seats are free for {result['query']['date']}" + (f" ({labels})." if free else "."),
-                f"{result['query']['date']} के लिए {total} में से {n} सीटें खाली हैं" + (f" ({labels})।" if free else "।"))
+                f"{n} of {total} seats are free for {result['query']['date']}" + en_sfx,
+                f"{result['query']['date']} के लिए {total} में से {n} सीटें खाली हैं" + hi_sfx)
             resp["facts"] = {"free": n, "considered": total, "date": result["query"]["date"],
                              "window": result["query"].get("slot")
                              or (result["query"].get("start"), result["query"].get("end"))}
