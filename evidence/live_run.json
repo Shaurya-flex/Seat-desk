@@ -1,0 +1,170 @@
+{
+  "result": "SUCCESS",
+  "run_at_utc": "2026-11-03T05:13:46.643060+00:00",
+  "code_commit": "4dad9c9",
+  "provider": "Meta Model API",
+  "base_url": "https://api.meta.ai/v1",
+  "model_requested": "muse-spark-1.3",
+  "model_returned": "muse-spark-1.3",
+  "transport": "live-http",
+  "simulated": false,
+  "latency_ms": 3910.5,
+  "bounds": {
+    "retries": 0,
+    "max_outstanding": 1,
+    "max_completion_tokens": 2048,
+    "reasoning_effort": "minimal",
+    "transport_timeout_s": 20.0,
+    "overall_deadline_s": 25.0
+  },
+  "fixture": {
+    "data_class": "SYNTHETIC FIXTURE -- not real Rasra Library data",
+    "clock_class": "HISTORICAL FIXTURE CLOCK -- not the real current time",
+    "fixture_clock_as_of": "2026-10-27T10:00:00+05:30",
+    "fixture_timezone": "Asia/Kolkata",
+    "real_time_at_run_utc": "2026-11-03T05:13:46.726789+00:00",
+    "coverage_from": "2026-10-27",
+    "coverage_to": "2026-10-28",
+    "enquiry_date_within_coverage": true
+  },
+  "enquiry": "28 अक्टूबर 2026 को दोपहर में कौन सी सीटें खाली हैं?",
+  "expected_from_fixtures": {
+    "date": "2026-10-28",
+    "slot": "afternoon",
+    "interval": [
+      "12:00",
+      "18:00"
+    ],
+    "considered": 6,
+    "available": 6,
+    "free_ids": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06"
+    ],
+    "free_labels": [
+      "Seat 1",
+      "Seat 2",
+      "Seat 3",
+      "Seat 4",
+      "Seat 5",
+      "Seat 6"
+    ]
+  },
+  "resolved_query": {
+    "date": "2026-10-28",
+    "slot": "afternoon"
+  },
+  "tool_result": {
+    "as_of": "2026-10-27T10:00:00+05:30",
+    "timezone": "Asia/Kolkata",
+    "status": "ok",
+    "valid_request": true,
+    "query": {
+      "date": "2026-10-28",
+      "start": "12:00",
+      "end": "18:00",
+      "slot": "afternoon",
+      "seat_id": null
+    },
+    "operating_hours": {
+      "open": "06:00",
+      "close": "22:00",
+      "within": true
+    },
+    "errors": [],
+    "warnings": [],
+    "summary": {
+      "available": 6,
+      "considered": 6
+    },
+    "seats": [
+      {
+        "seat_id": "S01",
+        "label": "Seat 1",
+        "zone": "Quiet Zone",
+        "available": true,
+        "busy": [],
+        "reason": "free for the requested interval"
+      },
+      {
+        "seat_id": "S02",
+        "label": "Seat 2",
+        "zone": "Quiet Zone",
+        "available": true,
+        "busy": [],
+        "reason": "free for the requested interval"
+      },
+      {
+        "seat_id": "S03",
+        "label": "Seat 3",
+        "zone": "Quiet Zone",
+        "available": true,
+        "busy": [],
+        "reason": "free for the requested interval"
+      },
+      {
+        "seat_id": "S04",
+        "label": "Seat 4",
+        "zone": "General Zone",
+        "available": true,
+        "busy": [],
+        "reason": "free for the requested interval"
+      },
+      {
+        "seat_id": "S05",
+        "label": "Seat 5",
+        "zone": "General Zone",
+        "available": true,
+        "busy": [],
+        "reason": "free for the requested interval"
+      },
+      {
+        "seat_id": "S06",
+        "label": "Seat 6",
+        "zone": "General Zone",
+        "available": true,
+        "busy": [],
+        "reason": "free for the requested interval"
+      }
+    ]
+  },
+  "supported_answer": "2026-10-28 के लिए 6 में से 6 सीटें खाली हैं (जैसे Seat 1, Seat 2, Seat 3)।",
+  "citations": [],
+  "route": "availability",
+  "transparency_label": "Synthetic data",
+  "response_id": "chatcmpl-01a19fd3-e484-731e-a6cf-15857bd998c9",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 530,
+    "completion_tokens": 231,
+    "reasoning_tokens": 184,
+    "total_tokens": 761
+  },
+  "checks": {
+    "request_completed": true,
+    "lang_as_expected": true,
+    "route_availability": true,
+    "date_correct": true,
+    "slot_correct": true,
+    "interval_canonical": true,
+    "counts_match_fixture": true,
+    "free_seats_match_fixture": true,
+    "answer_states_count_and_date": true,
+    "seat_list_display_honest": true,
+    "answer_consistent_and_recomputed": true,
+    "extraction_validated": true,
+    "model_not_simulated": true,
+    "transport_live": true,
+    "provider_finish_ok": true,
+    "usage_reported": true,
+    "workflow_successful": true
+  },
+  "consistency_issues": [],
+  "error": null,
+  "note": "Operational facts come from the deterministic tool over labelled synthetic fixtures; the model performed validated extraction only. Fixture availability is HISTORICAL demo data, not current real Rasra Library availability.",
+  "billed_cost_usd_estimate": 0.001644
+}
