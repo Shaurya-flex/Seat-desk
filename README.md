@@ -112,8 +112,11 @@ resolved date and interval, the deterministic availability trace (labelled as a
 tool result, never as a citation), approved-policy citations when a policy was
 quoted, clarification questions, and the explicitly UNSENT human handoff. Mock
 mode is free and offline; the live toggle (needs `MODEL_API_KEY` server-side,
-via the shell or `.env`) bills per enquiry and is limited by app-level counters
-shown in the header — application counters, not provider-enforced caps. The
+via the shell or `.env`) bills per enquiry. Each visitor gets a cookie-scoped
+session: conversations are isolated, and billed calls are limited twice — a
+per-visitor cap and a process-wide cap, both shown in the header. These are
+application counters for this server process, not provider-enforced spending
+caps, and resetting a conversation never resets them. The
 "Read aloud" button uses the browser's own speech synthesis and is labelled so —
 it is not a Meta model.
 

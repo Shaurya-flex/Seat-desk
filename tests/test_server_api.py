@@ -70,3 +70,51 @@ def test_reset_clears_multiturn_state(desk):
     assert desk.assistant("mock").pending is not None
     desk.reset("mock")
     assert desk.assistant("mock").pending is None
+
+
+# ---- visitor-session isolation and quota semantics -------------------------
+
+def test_two_visitors_have_isolated_conversations(desk):
+    desk.enquire("Are any seats free?", "mock", sid="aaaaaaaaaaaaaaaa")
+    assert desk.assistant("mock", "aaaaaaaaaaaaaaaa").pending is not None
+    # the second visitor has no pending clarification
+    assert desk.assistant("mock", "bbbbbbbbbbbbbbbb").pending is None
+    r = desk.enquire("2026-10-28 को दोपहर में कौन सी सीटें खाली हैं?", "mock", sid="bbbbbbbbbbbbbbbb")
+    assert r["route"] == "availability"
+    # visitor A's pending state survived B's traffic
+    assert desk.assistant("mock", "aaaaaaaaaaaaaaaa").pending is not None
+
+
+def test_reset_only_clears_that_visitor_and_never_the_quota():
+    d = DeskState(key="k")
+    sa, sb = d.session("aaaaaaaaaaaaaaaa"), d.session("bbbbbbbbbbbbbbbb")
+    sa.live_extract_calls = 3
+    d.enquire("Are any seats free?", "mock", sid="aaaaaaaaaaaaaaaa")
+    d.enquire("Are any seats free?", "mock", sid="bbbbbbbbbbbbbbbb")
+    d.reset("mock", "aaaaaaaaaaaaaaaa")
+    assert d.assistant("mock", "aaaaaaaaaaaaaaaa").pending is None     # cleared
+    assert d.assistant("mock", "bbbbbbbbbbbbbbbb").pending is not None  # untouched
+    assert sa.live_extract_calls == 3                                   # quota NOT reset
+
+
+def test_per_session_cap_blocks_before_process_cap():
+    d = DeskState(key="k")
+    d.session("aaaaaaaaaaaaaaaa").live_extract_calls = 10**6
+    r = d.enquire("x", "live", sid="aaaaaaaaaaaaaaaa")
+    assert r["error"]["type"] == "AppSpendCap" and "your session" in r["error"]["message"]
+    # another visitor is not blocked by A's exhaustion (fails later only on key/network)
+    r2 = d.enquire("x", "live", sid="bbbbbbbbbbbbbbbb")
+    assert r2.get("error", {}).get("type") != "AppSpendCap" or "server cap" in r2["error"]["message"]
+
+
+def test_live_provider_failure_is_a_visible_error_never_a_mock_fallback():
+    class _Boom:
+        def post(self, *a, **k):
+            raise ConnectionError("provider unreachable")
+    d = DeskState(key="k", live_http_client=_Boom())
+    r = d.enquire("28 अक्टूबर 2026 को दोपहर?", "live")
+    assert "error" in r                       # surfaced, not swallowed
+    assert "unreachable" in r["error"]["message"]
+    # and the mock path still answers independently (no silent substitution)
+    ok = d.enquire("2026-10-28 को दोपहर में कौन सी सीटें खाली हैं?", "mock")
+    assert ok["route"] == "availability" and ok["simulated"] is True

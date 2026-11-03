@@ -140,7 +140,8 @@ async function refreshStatus(){
   status = await (await fetch('/api/status')).json();
   $('liveToggle').disabled = !status.live_available;
   if(!status.live_available) $('liveToggle').checked = false;
-  $('counters').textContent = `live ${status.live_extract_calls}/${status.live_extract_cap} · voice ${status.transcribe_calls}/${status.transcribe_cap} (app counters, not provider caps)`;
+  $('counters').textContent = `you: live ${status.you_live_calls}/${status.you_live_cap} · voice ${status.you_voice_calls}/${status.you_voice_cap} — server: ${status.live_extract_calls}/${status.live_extract_cap} · ${status.transcribe_calls}/${status.transcribe_cap} (app counters, not provider caps)`;
+  $('askBtn').textContent = mode()==='live' ? 'Ask the desk — LIVE' : 'Ask the desk — mock';
   $('modelsLine').textContent = `Understanding: ${mode()==='live' ? status.extraction_model+' via '+status.provider : 'mock rule-based (no Meta call)'} · Voice: ${status.voice_model} · Facts: deterministic code over synthetic fixtures (never a model)`;
   const c = $('modeChip'); c.textContent = 'mode: '+mode(); c.className = 'chip '+mode();
 }
