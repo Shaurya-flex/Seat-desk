@@ -100,9 +100,11 @@ class LiveTranscriber:
             raise TranscriptionError("no API key configured")
 
     def request_part(self) -> dict:
-        """The 'request' JSON part. mode/model verified from the docs; PUSH_TO_TALK
-        is the non-diarized file mode (turns come back empty, transcript is full)."""
-        part: dict = {"mode": "PUSH_TO_TALK", "model": self.model}
+        """The 'request' JSON part, matching the documented file example verbatim:
+        {"mode": ..., "model": ..., "audioEncoding": "WAV"}. PUSH_TO_TALK is the
+        non-diarized mode (turns come back empty, transcript is full)."""
+        part: dict = {"mode": "PUSH_TO_TALK", "model": self.model,
+                      "audioEncoding": "WAV"}
         if self.language_bias:
             part["languageBias"] = self.language_bias
         if self.keywords:
@@ -119,10 +121,15 @@ class LiveTranscriber:
                 resp = client.post(
                     self.base_url.rstrip("/") + "/asr/transcribe",
                     headers={"Authorization": f"Bearer {self._api_key}"},
-                    data={"request": json.dumps(self.request_part())},
-                    files={"audio": (Path(path).name, fh, "audio/wav")},
+                    # the docs' curl sets the request part's type to application/json
+                    files={
+                        "request": (None, json.dumps(self.request_part()), "application/json"),
+                        "audio": (Path(path).name, fh, "audio/wav"),
+                    },
                 )
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                raise TranscriptionError(
+                    f"HTTP {resp.status_code} from /asr/transcribe: {resp.text[:300]}")
             data = resp.json()
         finally:
             if self._client is None:

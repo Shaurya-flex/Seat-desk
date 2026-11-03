@@ -32,7 +32,7 @@ class _Client:
     def __init__(self, payload): self._payload, self.sent = payload, None
     def post(self, url, headers=None, data=None, files=None):
         self.sent = {"url": url, "headers": headers, "data": data,
-                     "files": {k: v[0] for k, v in (files or {}).items()}}
+                     "files": dict(files or {})}
         return _Resp(self._payload)
 
 
@@ -53,10 +53,14 @@ def test_multipart_contract_and_unconfirmed_transcript(tmp_path):
     c = _Client({"transcript": "नमस्ते", "audioDurationMs": 1000, "turns": []})
     t = _adapter(c).transcribe_file(f)
     assert c.sent["url"].endswith("/v1/asr/transcribe")
-    req = json.loads(c.sent["data"]["request"])
+    name, body, ctype = c.sent["files"]["request"]
+    assert name is None and ctype == "application/json"   # docs: request part is JSON-typed
+    req = json.loads(body)
     assert req["mode"] == "PUSH_TO_TALK" and req["model"] == "muse-voice-transcribe-1.0"
+    assert req["audioEncoding"] == "WAV"                   # required by the file example
     assert "Hindi" in req["languageBias"]
-    assert c.sent["files"]["audio"] == "a.wav"
+    assert c.sent["files"]["audio"][0] == "a.wav"
+    assert c.sent["data"] is None                          # nothing rides outside the two parts
     # a live transcript is NEVER confirmed automatically
     assert t.needs_confirmation and not t.mock and t.source == "live_audio"
     done = confirm_transcript(t, "नमस्ते जी")
@@ -82,3 +86,21 @@ def test_cost_estimate_from_duration(tmp_path):
     info = validate_wav(_wav(tmp_path / "a.wav", seconds=60))
     assert info["seconds"] == 60.0
     assert abs(info["estimated_cost_usd"] - 0.003) < 1e-9
+
+
+class _BadResp:
+    status_code = 400
+    text = '{"error":"audioEncoding missing"}'
+    def raise_for_status(self): raise AssertionError("should not be reached")
+    def json(self): raise AssertionError("should not be reached")
+
+
+class _BadClient:
+    def post(self, url, headers=None, data=None, files=None): return _BadResp()
+
+
+def test_provider_400_body_is_surfaced(tmp_path):
+    f = _wav(tmp_path / "a.wav")
+    with pytest.raises(TranscriptionError) as e:
+        _adapter(_BadClient()).transcribe_file(f)
+    assert "HTTP 400" in str(e.value) and "audioEncoding" in str(e.value)
