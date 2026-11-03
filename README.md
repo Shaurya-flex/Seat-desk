@@ -13,12 +13,12 @@ Built for the Meta Global AI Developer Hackathon (Oct–Nov 2026), Indie Develop
 | Deterministic availability engine + tests | **implemented & tested** (offline) |
 | Workflow skeleton (retrieval, routing, clarification, citation+support checks, sanitised tool, handoff summary, limits) | **implemented & tested against a MOCK model** (offline, deterministic) |
 | Mock model adapter | implemented, clearly labelled `simulated` |
-| Real Meta model integration | **adapter implemented; request contract verified against official docs (2 Nov 2026)**; one-shot live harness ready (`scripts/live_once.py`); **no billed call made yet** |
+| Real Meta model integration | **adapter implemented; request contract verified against official docs (2 Nov 2026)**; **first genuine live call succeeded on 3 Nov 2026** with all checks passed (`evidence/live_run.json`) |
 | Hindi answer quality | **unproven** — the mock copies approved text; it is not a language-quality signal |
 | Human handoff delivery | **not implemented** — handoff produces a copyable summary only; nothing is sent |
 | Voice (Hindi audio) | **adapter + one-shot harness implemented; contract + Hindi support verified from official docs (2 Nov 2026)**; transcript requires explicit confirmation; **not wired into the main flow; no live transcription made yet** |
 
-Account access exists (hackathon credits + pay-as-you-go key), but **no paid call has been made**: usage shows zero requests. The live harness makes exactly one call, only when run explicitly with `--run --i-approve-spend`.
+Account access exists (hackathon credits + pay-as-you-go key), and **exactly one paid call has been made** (3 Nov 2026, ~$0.002): see `evidence/live_run.json`. The live harness makes exactly one call, only when run explicitly with `--run --i-approve-spend`.
 
 ### Simulated vs live
 
@@ -142,13 +142,13 @@ vs grant eligibility), and `docs/LIMITATIONS.md` (proven vs not). The real `Live
 is implemented with **mocked-HTTP contract tests** (transport timeout, classified retries,
 structured-extraction + read-only tool-call validation, no silent fallback) and its request
 contract (endpoint, `max_completion_tokens`, mandatory reasoning, strict JSON-schema
-output) was verified against the official docs on 2 Nov 2026 — **no live call has
-been made yet**; `scripts/live_once.py` performs the first one explicitly.
+output) was verified against the official docs on 2 Nov 2026 — **the first genuine live
+round trip was performed on 3 Nov 2026** by `scripts/live_once.py`.
 `app/intake.py` holds clearly-labelled **mock** audio/transcript/staff-recheck scaffolding,
 not wired into the finished text flow. Mock tests prove wiring only, not Meta integration.
 
-> Project description for publishing: use **"Meta integration in progress"** until a genuine
-> live round trip exists — do not describe mock behaviour as live/Meta-powered.
+> Project description for publishing: a genuine live round trip
+> exists (3 Nov 2026, `evidence/live_run.json`) — do not describe mock behaviour as live/Meta-powered.
 
 Limits: request-volume and tool-call limits are enforced in code. `max_output_tokens`
 is a provider generation parameter (not used to truncate our verified answers);
