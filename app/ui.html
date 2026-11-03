@@ -59,6 +59,14 @@
   .stat b{display:block;font-size:14px}
   .sec{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px;font-size:13px}
   .sec b.tag2{display:inline-block;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+  .seatgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin-top:10px;max-width:560px}
+  .seat{border-radius:12px;padding:10px 10px 8px;border:1.5px solid;line-height:1.3}
+  .seat b{display:block;font-size:14px}
+  .seat span{font-size:11px;color:var(--mut)}
+  .seat em{display:block;font-style:normal;font-weight:700;font-size:12px;margin-top:4px}
+  .seat small{display:block;font-size:10.5px;color:var(--bad);margin-top:2px}
+  .sfree{background:#f0fdf4;border-color:#bbf7d0}.sfree em{color:#15803d}
+  .sbusy{background:#fef2f2;border-color:#fecaca}.sbusy em{color:#b91c1c}
   table{border-collapse:collapse;margin-top:8px;font-size:13px;width:100%;max-width:460px}
   td,th{border-bottom:1px solid var(--line);padding:5px 10px;text-align:left}
   th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
@@ -177,8 +185,8 @@ function render(container, r){
         <div class="stat"><span class="mut">status</span><b>${esc(av.status)}</b></div></div>`;
       h += `<div class="sec"><b class="tag2">Deterministic availability tool result — not a policy citation</b>`;
       if(av.seats && av.seats.length){
-        h += `<table><tr><th>seat</th><th>zone</th><th>state</th></tr>` + av.seats.map(s =>
-          `<tr><td>${esc(s.label)}</td><td class="mut">${esc(s.zone||'')}</td><td><span class="pill ${s.available?'free':'busy'}">${s.available?'free':'occupied'}</span>${!s.available&&s.reason?(' <span class="small mut">'+esc(s.reason)+'</span>'):''}</td></tr>`).join('') + `</table>`;
+        h += `<div class="seatgrid">` + av.seats.map(s =>
+          `<div class="seat ${s.available?'sfree':'sbusy'}"><b>${esc(s.label)}</b><span>${esc(s.zone||'')}</span><em>${s.available?'FREE':'OCCUPIED'}</em>${!s.available&&s.reason?('<small>'+esc(s.reason)+'</small>'):''}</div>`).join('') + `</div>`;
       }
       h += `</div>`;
     }
