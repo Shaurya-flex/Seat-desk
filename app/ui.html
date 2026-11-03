@@ -5,71 +5,126 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seat Desk — Moodily Enquiry Assistant</title>
 <style>
-  :root { --ink:#1c1917; --mut:#78716c; --line:#e7e5e4; --bg:#fafaf9; --card:#ffffff;
-          --accent:#0f766e; --warn:#b45309; --bad:#b91c1c; --chip:#f5f5f4; }
-  * { box-sizing:border-box; }
-  body { margin:0; font:15px/1.5 -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg); }
-  .wrap { max-width:880px; margin:0 auto; padding:20px 16px 80px; }
-  h1 { font-size:20px; margin:0; } .sub { color:var(--mut); font-size:13px; margin:2px 0 10px; }
-  .banner { background:#fef3c7; border:1px solid #fde68a; color:#78350f; border-radius:8px;
-            padding:8px 12px; font-size:13px; margin:10px 0; }
-  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:13px; margin:8px 0 14px; }
-  .chip { background:var(--chip); border:1px solid var(--line); border-radius:999px; padding:2px 10px; }
-  .chip.live { background:#dcfce7; border-color:#86efac; color:#14532d; }
-  .chip.mock { background:#e0e7ff; border-color:#c7d2fe; color:#312e81; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:10px 0; }
-  textarea, input[type=text] { width:100%; font:inherit; padding:10px; border:1px solid var(--line); border-radius:8px; }
-  button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--line);
-           background:#fff; cursor:pointer; }
-  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-  button:disabled { opacity:.45; cursor:not-allowed; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
-  .turn-user { margin:14px 0 4px; font-weight:600; }
-  .turn-user .you { color:var(--mut); font-weight:400; font-size:12px; }
-  .route { font-size:12px; border-radius:999px; padding:1px 9px; border:1px solid var(--line); background:var(--chip); }
-  .answer { font-size:16px; margin:6px 0; }
-  .clar { color:var(--warn); font-size:15px; margin:6px 0; }
-  .sec { border-top:1px dashed var(--line); margin-top:8px; padding-top:8px; font-size:13px; }
-  .sec b.tag { display:inline-block; font-size:11px; letter-spacing:.3px; text-transform:uppercase; color:var(--mut); }
-  table { border-collapse:collapse; margin-top:6px; font-size:13px; }
-  td, th { border:1px solid var(--line); padding:3px 8px; text-align:left; }
-  .free { color:#166534; } .busy { color:var(--bad); }
-  .handoff { background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:8px 10px; margin-top:6px; white-space:pre-wrap; font-size:13px; }
-  .err { color:var(--bad); font-size:14px; }
-  .lbl { font-size:12px; color:var(--mut); margin-top:8px; }
-  .mut { color:var(--mut); } .small { font-size:12px; }
-  #transBox { background:#f0fdfa; border:1px solid #99f6e4; }
+  :root{
+    --ink:#1a1714; --mut:#8a8178; --line:#e9e4dd; --bg:#f6f3ee; --card:#ffffff;
+    --accent:#0e7265; --accent-2:#0a5a50; --gold:#b8860b; --warn:#b45309; --bad:#b91c1c;
+    --chip:#f1ede6; --user:#143b36; --shadow:0 1px 2px rgba(26,23,20,.05),0 8px 24px -12px rgba(26,23,20,.18);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,"Segoe UI","Noto Sans Devanagari",sans-serif;color:var(--ink);background:var(--bg)}
+  .hero{background:linear-gradient(135deg,#0e3f38 0%,#0e7265 70%,#13857a 100%);color:#f2fbf9;padding:26px 16px 52px}
+  .hero-in{max-width:940px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:42px;height:42px;border-radius:12px;background:#f2fbf9;color:#0e7265;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;box-shadow:var(--shadow)}
+  h1{font-size:22px;margin:0;letter-spacing:.2px}
+  .tag{opacity:.85;font-size:13px;margin-top:2px}
+  .hero-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;font-size:12.5px}
+  .hb{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:3px 12px}
+  .wrap{max-width:940px;margin:-34px auto 0;padding:0 16px 90px}
+  .banner{background:#fdf6e3;border:1px solid #f0e2bb;color:#6b4e0a;border-radius:12px;padding:10px 14px;font-size:13px;box-shadow:var(--shadow)}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;margin:14px 0 4px}
+  .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
+  .chip.live{background:#dcfce7;border-color:#86efac;color:#14532d;font-weight:600}
+  .chip.mock{background:#e0e7ff;border-color:#c7d2fe;color:#312e81;font-weight:600}
+  .models{font-size:12.5px;color:var(--mut);margin:6px 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+  textarea{width:100%;font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:12px;resize:vertical;background:#fffdfa}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  button{font:inherit;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;transition:all .15s}
+  button:hover{border-color:var(--accent);color:var(--accent-2)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{background:var(--accent-2);color:#fff}
+  button.rec{background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:600}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .hint{font-size:12.5px;color:var(--mut)}
+  .samples{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .sample{font-size:12.5px;background:#eef7f5;border:1px solid #cde8e3;color:#0a5a50;border-radius:999px;padding:4px 12px;cursor:pointer}
+  .sample:hover{background:#dff0ec}
+  .turn{display:flex;flex-direction:column;align-items:flex-end;margin:18px 0 6px}
+  .bubble-user{background:var(--user);color:#f0faf8;border-radius:16px 16px 4px 16px;padding:10px 16px;max-width:85%;font-weight:500;box-shadow:var(--shadow)}
+  .meta-user{font-size:11.5px;color:var(--mut);margin-top:4px}
+  .desk{border-left:4px solid var(--accent);margin-top:8px}
+  .routes{display:flex;gap:6px;flex-wrap:wrap}
+  .route{font-size:11.5px;border-radius:999px;padding:2px 10px;border:1px solid var(--line);background:var(--chip);text-transform:uppercase;letter-spacing:.4px}
+  .route.availability{background:#dcfce7;border-color:#bbf7d0;color:#14532d}
+  .route.policy{background:#e0f2fe;border-color:#bae6fd;color:#0c4a6e}
+  .route.clarify{background:#fef3c7;border-color:#fde68a;color:#78350f}
+  .route.handoff,.route.no_answer{background:#ffedd5;border-color:#fed7aa;color:#7c2d12}
+  .route.injection{background:#fee2e2;border-color:#fecaca;color:#7f1d1d}
+  .answer{font-size:17px;margin:10px 0 2px;line-height:1.6}
+  .clar{color:var(--warn);font-size:16px;margin:10px 0 2px}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+  .stat{background:#f8f6f2;border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:12.5px}
+  .stat b{display:block;font-size:14px}
+  .sec{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px;font-size:13px}
+  .sec b.tag2{display:inline-block;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+  table{border-collapse:collapse;margin-top:8px;font-size:13px;width:100%;max-width:460px}
+  td,th{border-bottom:1px solid var(--line);padding:5px 10px;text-align:left}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+  .pill{border-radius:999px;padding:1px 10px;font-size:12px;font-weight:600}
+  .pill.free{background:#dcfce7;color:#14532d}
+  .pill.busy{background:#fee2e2;color:#7f1d1d}
+  .handoff{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;margin-top:8px;white-space:pre-wrap;font-size:13px}
+  .err{color:var(--bad);font-size:14px}
+  .lbl{font-size:11.5px;color:var(--mut);margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+  .mut{color:var(--mut)} .small{font-size:12px}
+  #transBox{background:#ecfdf8;border:1.5px solid #5eead4;border-radius:12px;padding:12px;margin-top:12px}
+  .thinking{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:14px}
+  .dots span{display:inline-block;width:7px;height:7px;margin-right:4px;border-radius:50%;background:var(--accent);animation:b 1.2s infinite}
+  .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+  @keyframes b{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+  .speak{font-size:12px;padding:3px 10px}
+  @media (max-width:640px){ .bubble-user{max-width:100%} .answer{font-size:16px} }
 </style>
 </head>
-<body><div class="wrap">
-  <h1>Seat Desk <span class="mut">— Moodily Enquiry Assistant</span></h1>
-  <div class="sub">Hindi/English front desk for Rasra Library &amp; Study Point (demo)</div>
-  <div class="banner">Historical <b>synthetic demonstration data</b> — fixture clock 27 Oct 2026 (IST), coverage 27–28 Oct 2026. Not real library records. Nothing here books a seat or sends a message.</div>
+<body>
+<div class="hero"><div class="hero-in">
+  <div class="brand"><div class="mark">SD</div>
+    <div><h1>Seat Desk <span style="opacity:.75;font-weight:400">— Moodily Enquiry Assistant</span></h1>
+    <div class="tag">Hindi / English front desk · Rasra Library &amp; Study Point</div></div>
+  </div>
+  <div class="hero-badges">
+    <span class="hb">🧠 Understanding: Muse Spark 1.3</span>
+    <span class="hb">🎙 Voice: Muse Voice Transcribe 1.0</span>
+    <span class="hb">🧮 Facts: deterministic code — never a model</span>
+    <span class="hb">🔒 Read-only · nothing booked or sent</span>
+  </div>
+</div></div>
+<div class="wrap">
+  <div class="banner">Historical <b>synthetic demonstration data</b> — fixture clock 27 Oct 2026 (IST), coverage 27–28 Oct 2026. Not real library records.</div>
 
   <div class="bar">
     <span id="modeChip" class="chip mock">mode: mock</span>
     <label><input type="checkbox" id="liveToggle"> use live Meta model (billed per enquiry)</label>
     <span class="chip" id="counters"></span>
-    <button id="resetBtn" title="forget conversation state">Reset conversation</button>
+    <button id="resetBtn">↺ Reset conversation</button>
   </div>
-  <div class="bar small mut" id="modelsLine"></div>
+  <div class="models" id="modelsLine"></div>
 
   <div class="card">
-    <textarea id="enquiry" rows="2" placeholder="Type an enquiry… e.g. 28 अक्टूबर 2026 को दोपहर में कौन सी सीटें खाली हैं?"></textarea>
+    <textarea id="enquiry" rows="2" placeholder="Type an enquiry in Hindi or English…"></textarea>
     <div class="row">
-      <button class="primary" id="askBtn">Ask</button>
-      <button id="micBtn">🎙 Record Hindi/English</button>
+      <button class="primary" id="askBtn">Ask the desk</button>
+      <button id="micBtn">🎙 Record</button>
       <input type="file" id="wavFile" accept=".wav,audio/wav" style="display:none">
       <button id="uploadBtn">Upload .wav</button>
-      <span class="small mut">voice → transcript → <b>you confirm</b> → desk answers</span>
+      <span class="hint">voice → transcript → <b>you confirm</b> → desk answers</span>
     </div>
-    <div id="transBox" class="card" style="display:none">
-      <b>Transcript (unconfirmed)</b> <span class="small mut" id="transMeta"></span>
+    <div class="samples" id="samples">
+      <span class="sample">28 अक्टूबर 2026 को दोपहर में कौन सी सीटें खाली हैं?</span>
+      <span class="sample">27 अक्टूबर 2026 को सुबह कौन सी सीटें खाली हैं?</span>
+      <span class="sample">What is the monthly fee?</span>
+      <span class="sample">Can you refund my fee?</span>
+      <span class="sample">29 अक्टूबर 2026 को शाम को सीट मिलेगी?</span>
+    </div>
+    <div id="transBox" style="display:none">
+      <b>Transcript — unconfirmed</b> <span class="small mut" id="transMeta"></span>
       <textarea id="transText" rows="2"></textarea>
       <div class="row">
-        <button class="primary" id="confirmBtn">Confirm &amp; ask</button>
+        <button class="primary" id="confirmBtn">✓ Confirm &amp; ask</button>
         <button id="discardBtn">Discard</button>
-        <span class="small mut">transcribed by <span id="transModel"></span>; it is never used without your confirmation</span>
+        <span class="small mut">by <span id="transModel"></span> · never used without your confirmation</span>
       </div>
     </div>
   </div>
@@ -85,7 +140,7 @@ async function refreshStatus(){
   status = await (await fetch('/api/status')).json();
   $('liveToggle').disabled = !status.live_available;
   if(!status.live_available) $('liveToggle').checked = false;
-  $('counters').textContent = `live calls ${status.live_extract_calls}/${status.live_extract_cap} · voice ${status.transcribe_calls}/${status.transcribe_cap} (app counters, not provider caps)`;
+  $('counters').textContent = `live ${status.live_extract_calls}/${status.live_extract_cap} · voice ${status.transcribe_calls}/${status.transcribe_cap} (app counters, not provider caps)`;
   $('modelsLine').textContent = `Understanding: ${mode()==='live' ? status.extraction_model+' via '+status.provider : 'mock rule-based (no Meta call)'} · Voice: ${status.voice_model} · Facts: deterministic code over synthetic fixtures (never a model)`;
   const c = $('modeChip'); c.textContent = 'mode: '+mode(); c.className = 'chip '+mode();
 }
@@ -93,50 +148,66 @@ $('liveToggle').onchange = refreshStatus;
 
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
 
-function render(q, r){
-  const log = $('log'); const el = document.createElement('div');
-  let h = `<div class="turn-user"><span class="you">You · ${esc(r.mode||mode())}</span><br>${esc(q)}</div>`;
-  h += `<div class="card">`;
+function userTurn(q, m){
+  const t = document.createElement('div'); t.className = 'turn';
+  t.innerHTML = `<div class="bubble-user">${esc(q)}</div><div class="meta-user">you · ${esc(m)} mode</div>`;
+  $('log').prepend(t); return t;
+}
+function thinkingCard(){
+  const el = document.createElement('div'); el.className = 'card desk';
+  el.innerHTML = `<div class="thinking"><span class="dots"><span></span><span></span><span></span></span> asking ${mode()==='live' ? esc(status.extraction_model)+' …' : 'the desk …'}</div>`;
+  return el;
+}
+
+function render(container, r){
+  let h = '';
   if(r.error){
     h += `<div class="err">⚠ ${esc(r.error.type)}: ${esc(r.error.message)}</div>`;
   } else {
-    h += `<span class="route">route: ${esc(r.route)}</span> <span class="route">lang: ${esc(r.lang)}</span>`;
-    if(r.answer) h += `<div class="answer">${esc(r.answer)} <button class="small" onclick="speak(this)" data-t="${esc(r.answer)}">🔊 Read aloud</button><span class="small mut"> (browser speech synthesis — not a Meta model)</span></div>`;
+    h += `<div class="routes"><span class="route ${esc(r.route)}">${esc(r.route)}</span><span class="route">lang: ${esc(r.lang)}</span></div>`;
+    if(r.answer) h += `<div class="answer">${esc(r.answer)} <button class="speak" onclick="speak(this)" data-t="${esc(r.answer)}">🔊</button><span class="small mut"> browser speech — not a Meta model</span></div>`;
     if(r.clarification) h += `<div class="clar">❓ ${esc(r.clarification)}</div>`;
     if(r.availability && r.availability.status){
       const av = r.availability, q2 = av.query||{};
-      h += `<div class="sec"><b class="tag">Deterministic availability tool result — not a policy citation</b><br>
-        requested: <b>${esc(q2.date||'—')}</b> ${esc(q2.start||'')}–${esc(q2.end||'')} ${q2.slot?('('+esc(q2.slot)+')'):''} · status: ${esc(av.status)}`;
-      if(av.summary) h += ` · free <b>${av.summary.available}</b> of ${av.summary.considered}`;
+      h += `<div class="stats">
+        <div class="stat"><span class="mut">date</span><b>${esc(q2.date||'—')}</b></div>
+        <div class="stat"><span class="mut">interval</span><b>${esc(q2.start||'—')}–${esc(q2.end||'—')}${q2.slot?(' · '+esc(q2.slot)):''}</b></div>
+        ${av.summary?`<div class="stat"><span class="mut">free</span><b>${av.summary.available} of ${av.summary.considered}</b></div>`:''}
+        <div class="stat"><span class="mut">status</span><b>${esc(av.status)}</b></div></div>`;
+      h += `<div class="sec"><b class="tag2">Deterministic availability tool result — not a policy citation</b>`;
       if(av.seats && av.seats.length){
         h += `<table><tr><th>seat</th><th>zone</th><th>state</th></tr>` + av.seats.map(s =>
-          `<tr><td>${esc(s.label)}</td><td>${esc(s.zone||'')}</td><td class="${s.available?'free':'busy'}">${s.available?'free':'occupied'}${!s.available&&s.reason?(' — '+esc(s.reason)):''}</td></tr>`).join('') + `</table>`;
+          `<tr><td>${esc(s.label)}</td><td class="mut">${esc(s.zone||'')}</td><td><span class="pill ${s.available?'free':'busy'}">${s.available?'free':'occupied'}</span>${!s.available&&s.reason?(' <span class="small mut">'+esc(s.reason)+'</span>'):''}</td></tr>`).join('') + `</table>`;
       }
       h += `</div>`;
     }
     if(r.citations && r.citations.length)
-      h += `<div class="sec"><b class="tag">Approved policy sources</b><br>cites: ${r.citations.map(esc).join(', ')} (from the approved knowledge pack)</div>`;
+      h += `<div class="sec"><b class="tag2">Approved policy sources</b><br>cites: <b>${r.citations.map(esc).join(', ')}</b> <span class="mut">(from the approved knowledge pack)</span></div>`;
     if(r.handoff && r.handoff.text)
-      h += `<div class="sec"><b class="tag">Human handoff — NOT sent</b><div class="handoff">${esc(r.handoff.text)}</div><span class="small mut">copy this to a person; the assistant never sends anything</span></div>`;
+      h += `<div class="sec"><b class="tag2">Human handoff — NOT sent</b><div class="handoff">${esc(r.handoff.text)}</div><span class="small mut">copy this to a person; the assistant never sends anything</span></div>`;
     if(r.warnings && r.warnings.length) h += `<div class="sec err small">${r.warnings.map(esc).join('<br>')}</div>`;
     const u = r.usage ? ` · tokens ${r.usage.total_tokens} (reasoning ${r.usage.reasoning_tokens})` : '';
     h += `<div class="lbl">${esc((r.transparency&&r.transparency.label)||'')} · transport: ${esc(r.transport||'n/a')} · understanding: ${esc((r.models&&r.models.extraction)||'')}${u}</div>`;
   }
-  h += `</div>`;
-  el.innerHTML = h; log.prepend(el); refreshStatus();
+  container.className = 'card desk'; container.innerHTML = h; refreshStatus();
 }
 
 async function ask(text){
   if(!text || !text.trim()) return;
+  const m = mode();
+  const t = userTurn(text.trim(), m);
+  const holder = thinkingCard(); t.after(holder);
   $('askBtn').disabled = true;
   try {
     const r = await (await fetch('/api/enquire',{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({text, mode: mode()})})).json();
-    render(text, r);
-  } finally { $('askBtn').disabled = false; }
+      body: JSON.stringify({text, mode: m})})).json();
+    render(holder, r);
+  } catch(e){ render(holder, {error:{type:'NetworkError', message:String(e)}}); }
+  finally { $('askBtn').disabled = false; }
 }
 $('askBtn').onclick = () => { const t=$('enquiry').value; $('enquiry').value=''; ask(t); };
 $('enquiry').addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); $('askBtn').click(); }});
+$('samples').addEventListener('click', e => { if(e.target.classList.contains('sample')) { $('enquiry').value = e.target.textContent; $('enquiry').focus(); }});
 $('resetBtn').onclick = async () => { await fetch('/api/reset',{method:'POST',body:JSON.stringify({mode:mode()})}); $('log').innerHTML=''; };
 
 function speak(btn){
@@ -148,7 +219,7 @@ function speak(btn){
 window.speak = speak;
 
 // ---- voice: record -> 16 kHz mono 16-bit WAV in the page -> server --------
-let recCtx, recProc, recSrc, recStream, recBuf = [], recording = false;
+let recCtx, recProc, recSrc, recStream, recBuf = [], recording = false, recT0 = 0, recTimer = null;
 $('micBtn').onclick = async () => {
   if(!recording){
     try { recStream = await navigator.mediaDevices.getUserMedia({audio:true}); }
@@ -156,24 +227,26 @@ $('micBtn').onclick = async () => {
     recCtx = new (window.AudioContext||window.webkitAudioContext)();
     recSrc = recCtx.createMediaStreamSource(recStream);
     recProc = recCtx.createScriptProcessor(4096,1,1);
-    recBuf = []; recording = true;
+    recBuf = []; recording = true; recT0 = Date.now();
     recProc.onaudioprocess = e => { if(recording) recBuf.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
     recSrc.connect(recProc); recProc.connect(recCtx.destination);
-    $('micBtn').textContent = '■ Stop recording';
+    $('micBtn').className = 'rec';
+    recTimer = setInterval(()=>{ $('micBtn').textContent = `● Recording ${(Math.round((Date.now()-recT0)/1000))}s — tap to stop`; }, 250);
+    $('micBtn').textContent = '● Recording 0s — tap to stop';
   } else {
-    recording = false;
+    recording = false; clearInterval(recTimer);
     recProc.disconnect(); recSrc.disconnect(); recStream.getTracks().forEach(t=>t.stop());
     const sr = recCtx.sampleRate; recCtx.close();
     const n = recBuf.reduce((a,b)=>a+b.length,0);
     const flat = new Float32Array(n); let o=0; for(const b of recBuf){ flat.set(b,o); o+=b.length; }
-    $('micBtn').textContent = '🎙 Record Hindi/English';
+    $('micBtn').className = ''; $('micBtn').textContent = '🎙 Record';
     sendWav(encodeWav16k(flat, sr));
   }
 };
 function encodeWav16k(f32, srcRate){
   const ratio = srcRate/16000, outLen = Math.floor(f32.length/ratio);
   const out = new Float32Array(outLen);
-  for(let i=0;i<outLen;i++){                       // mean-downsample
+  for(let i=0;i<outLen;i++){
     const a = Math.floor(i*ratio), b = Math.min(Math.floor((i+1)*ratio), f32.length);
     let s=0; for(let j=a;j<b;j++) s+=f32[j]; out[i]= b>a ? s/(b-a) : 0;
   }
@@ -190,13 +263,19 @@ $('uploadBtn').onclick = () => $('wavFile').click();
 $('wavFile').onchange = () => { if($('wavFile').files[0]) sendWav($('wavFile').files[0]); $('wavFile').value=''; };
 async function sendWav(blob){
   $('micBtn').disabled = true; $('uploadBtn').disabled = true;
+  const t = userTurn('(voice enquiry)', mode());
+  const holder = thinkingCard(); holder.querySelector('.thinking').innerHTML =
+    `<span class="dots"><span></span><span></span><span></span></span> transcribing with ${esc(status.voice_model)} …`;
+  t.after(holder);
   try {
     const r = await (await fetch('/api/transcribe',{method:'POST',headers:{'Content-Type':'audio/wav'},body:blob})).json();
-    if(r.error){ render('(voice enquiry)', r); return; }
+    if(r.error){ render(holder, r); return; }
+    holder.remove(); t.remove();
     $('transText').value = r.transcript; $('transModel').textContent = r.model;
-    $('transMeta').textContent = `${r.audio?r.audio.seconds+'s':''} · unconfirmed`;
-    $('transBox').style.display = 'block';
-  } finally { $('micBtn').disabled = false; $('uploadBtn').disabled = false; refreshStatus(); }
+    $('transMeta').textContent = `${r.audio?r.audio.seconds+'s audio':''}`;
+    $('transBox').style.display = 'block'; $('transText').focus();
+  } catch(e){ render(holder, {error:{type:'NetworkError', message:String(e)}}); }
+  finally { $('micBtn').disabled = false; $('uploadBtn').disabled = false; refreshStatus(); }
 }
 $('confirmBtn').onclick = () => { const t=$('transText').value; $('transBox').style.display='none'; ask(t); };
 $('discardBtn').onclick = () => { $('transBox').style.display='none'; $('transText').value=''; };
