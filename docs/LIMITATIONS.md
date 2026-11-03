@@ -27,7 +27,8 @@ Safety/positioning:
 
 - Read-only: no booking writes, payments, or member-record changes.
 - Handoffs are copyable summaries, never sent (`delivered: false`).
-- Every response carries a persistent "Synthetic data · Mock model" transparency label.
+- Every response carries a persistent transparency label: always "Synthetic data",
+  plus "Mock model" whenever the mock adapter produced the understanding.
 
 ## rc4 (2026-10-29): live integration wiring complete (still mock-HTTP verified)
 - Live-model extraction is wired into the workflow: validated `ExtractedFields`

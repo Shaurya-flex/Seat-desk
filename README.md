@@ -98,6 +98,25 @@ as `COMPLETED_BUT_INCORRECT`, never `SUCCESS`. Fixture availability is
 **historical synthetic demo data** (fixture clock 2026-10-27 IST), not current
 real library availability.
 
+## Interactive desk (local)
+
+```bash
+python -m app.server
+```
+
+Open http://127.0.0.1:8777 (local-only). It drives the SAME `Assistant.handle()`
+workflow: type an enquiry, or speak one — the page records 16 kHz mono WAV (or
+accepts a .wav upload), `muse-voice-transcribe-1.0` returns a transcript, and the
+transcript is **never used until you confirm or correct it**. Answers show the
+resolved date and interval, the deterministic availability trace (labelled as a
+tool result, never as a citation), approved-policy citations when a policy was
+quoted, clarification questions, and the explicitly UNSENT human handoff. Mock
+mode is free and offline; the live toggle (needs `MODEL_API_KEY` server-side,
+via the shell or `.env`) bills per enquiry and is limited by app-level counters
+shown in the header — application counters, not provider-enforced caps. The
+"Read aloud" button uses the browser's own speech synthesis and is labelled so —
+it is not a Meta model.
+
 Evidence separation: anything produced by mock or stubbed transports stays in
 tests/eval output and is labelled `mocked-http`/`builtin`; only
 `evidence/live_run.json` with `"transport": "live-http"` counts as genuine Meta
@@ -153,6 +172,9 @@ not wired into the finished text flow. Mock tests prove wiring only, not Meta in
 Limits: request-volume and tool-call limits are enforced in code. `max_output_tokens`
 is a provider generation parameter (not used to truncate our verified answers);
 `max_display_chars` is a display-only clamp for untrusted free text. Retry limiting is
-declared but **not yet enforced** (`RETRY_ENFORCEMENT = "planned"`). Every response
-carries a persistent `transparency` label ("Synthetic data · Mock model"); handoffs are
-copyable summaries and are never sent (`delivered: false`).
+**enforced** by classified retries in `run_guarded`
+(`RETRY_ENFORCEMENT = "enforced_in_run_guarded"`; the one-shot live harness uses
+retries=0). Every response carries a persistent `transparency` label — always
+"Synthetic data", plus "Mock model" whenever the mock adapter produced the
+understanding; handoffs are copyable summaries and are never sent
+(`delivered: false`).

@@ -9,8 +9,8 @@ Two different things, kept separate:
   text in a UI. It never touches a verified grounded answer (that would risk
   removing a qualification).
 
-Enforced in code now: request volume per session, tool calls per turn.
-Planned (not yet enforced in code): retry limiting — see RETRY_ENFORCEMENT.
+Enforced in code now: request volume per session, tool calls per turn, and
+retry limiting (classified retries in run_guarded) — see RETRY_ENFORCEMENT.
 """
 from __future__ import annotations
 
