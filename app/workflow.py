@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .handoff import build_handoff_summary
 from .limits import Limits, SessionBudget
-from .model import MockModelAdapter
+from .model import MockModelAdapter, is_consequential
 from .retrieval import load_pack, retrieve, confirmed_items, validate_citation, render_policy
 from .tools import AvailabilityTool, ToolError
 
@@ -178,6 +178,15 @@ class Assistant:
         u = self._understand(enquiry)
         lang, intent, ref, from_model = u["lang"], u["intent"], u["ref"], u["from_model"]
 
+        # Deterministic guard: a consequential/personal request (refund, cancel,
+        # booking, member-record change) always hands off, whatever intent the
+        # model returned. Without this, a live model that labels "Can you refund
+        # my fee?" as `policy` lets keyword retrieval cite fees.monthly — a wrong,
+        # confidently-cited answer. Injection still wins (it is refused outright).
+        model_intent = intent
+        if intent != "injection" and is_consequential(enquiry):
+            intent = "handoff"
+
         # Keyword-path anaphora context (mock only; live reuses the prior query).
         if not from_model:
             if "date" in ref:
@@ -226,6 +235,9 @@ class Assistant:
 
         if intent == "handoff":
             resp = self._base("handoff", lang)
+            if model_intent != "handoff":
+                resp["warnings"].append(
+                    f"consequential_guard: model intent {model_intent!r} overridden -> handoff")
             resp["handoff"] = build_handoff_summary(
                 enquiry, lang, reason="consequential or personal request", pack=self.pack)
             resp["answer"] = _t(lang,

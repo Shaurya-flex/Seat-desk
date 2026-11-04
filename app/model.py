@@ -37,6 +37,15 @@ _AVAILABILITY = [
 ]
 
 
+def is_consequential(enquiry: str) -> bool:
+    """Deterministic guard for consequential/personal requests (refunds,
+    cancellations, bookings, member-record changes). Shared by the mock
+    classifier and the workflow so the route never depends on which adapter
+    produced the understanding: the model understands, the code decides."""
+    low = enquiry.lower()
+    return any(p in low for p in _HANDOFF)
+
+
 def detect_lang(text: str) -> str:
     return "hi" if DEVANAGARI.search(text) else "en"
 
@@ -62,7 +71,7 @@ class MockModelAdapter:
             return Classification(lang, "injection")
         if any(p in low for p in _CREDENTIAL):
             return Classification(lang, "no_answer")           # never share credentials
-        if any(p in low for p in _HANDOFF):
+        if is_consequential(enquiry):
             return Classification(lang, "handoff")
         avail = (any(p in low for p in _AVAILABILITY)
                  or ("free" in low and ("seat" in low or "सीट" in enquiry))
